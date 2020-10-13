@@ -3,11 +3,16 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:behaviors="clr-namespace:WPFTextBoxAutoComplete;assembly=WPFTextBoxAutoComplete"
         xmlns:local="clr-namespace:PNRSorter"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="PNR Sorter" Height="450" Width="800">
     <Grid>
-        <Button Content="CLICK" HorizontalAlignment="Left" Height="112" Margin="174,84,0,0" VerticalAlignment="Top" Width="358" Command="{Binding TestCommand}"/>
+        <Button Content="CLICK" HorizontalAlignment="Left" Height="112" Margin="214,214,0,0" VerticalAlignment="Top" Width="358" Command="{Binding TestCommand}"/>
+        <Button Content="Go" HorizontalAlignment="Left" Height="26" Margin="299,47,0,0" VerticalAlignment="Top" Width="107" Command="{Binding TestCommand}"/>
+        <Label Content="PNR number" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="75,47,0,0"/>
+        <TextBox Text="{Binding PNRSearch, UpdateSourceTrigger=PropertyChanged}" behaviors:AutoCompleteBehavior.AutoCompleteItemsSource="{Binding PNRList}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Margin="171,51,0,0"/>
+        <ComboBox Text="{Binding PNRSearch}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Margin="171,123,0,0"/>
 
     </Grid>
 </Window>
