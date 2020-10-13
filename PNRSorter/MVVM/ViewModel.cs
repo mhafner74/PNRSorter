@@ -33,6 +33,7 @@ namespace PNRSorter.MVVM
         private int _unitSoldCol;
         private int _colNb;
         private Dictionary<string, int> _colInfo = new Dictionary<string, int>();
+        private Dictionary<string, MyPNR> _PNRDic;
         #endregion
 
         #region Properties
@@ -91,6 +92,11 @@ namespace PNRSorter.MVVM
             get => _colInfo;
             set { _colInfo = value; OnPropertyChanged("colInfo"); }
         }
+        public Dictionary<string, MyPNR> PNRDic
+        {
+            get => _PNRDic;
+            set { _PNRDic = value; OnPropertyChanged("PNRDic"); }
+        }
         #endregion
 
         #region Commands
@@ -110,11 +116,12 @@ namespace PNRSorter.MVVM
             FileInfo KE24File = new FileInfo(@"C:\Users\msag\Desktop\PNRSorter\KE24_2020.xlsx");
             //List for the autocompletion
             PNRList = new ObservableCollection<string>();
+            PNRDic = new Dictionary<string, MyPNR>();
             //List of already classified PNRs
             PNRPMS = new List<string>();
             PNRSNC = new List<string>();
-            SNC = ExtractedPNR(SNCFile, "S&C");
-            PMS = ExtractedPNR(PMSFile, "PMS");
+            SNC = ExtractHierarchy(SNCFile, "S&C");
+            PMS = ExtractHierarchy(PMSFile, "PMS");
             //Selecting the desired values
             colInfo = new Dictionary<string, int>();
             colInfo.Add("Product", -1);
@@ -123,10 +130,10 @@ namespace PNRSorter.MVVM
             FindColumn(KE24File, colInfo);
             foreach (var key in colInfo.Keys)
                 Console.WriteLine("key: " + key + ", colNb: " + colInfo[key].ToString());
-            KE24 = ExtractedPNR(KE24File, "/", selectedColumns);
+            GenerateDB(KE24File);
             //Isolating PNRs
-            UniquePNR = FindUnique(KE24);
-            ToBeSorted = FilterExistingPNR(UniquePNR);
+            //UniquePNR = FindUnique(KE24);
+            ToBeSorted = FilterExistingPNR(PNRDic.Keys.ToList());
             //Verification procedures
         }
         #endregion
@@ -146,55 +153,73 @@ namespace PNRSorter.MVVM
         }
 
         #region Private Methods
-        private List<MyPNR> ExtractedPNR(FileInfo file, string group, Dictionary<string,int> colInfo = null)
+        private List<MyPNR> ExtractHierarchy(FileInfo file, string group)
         {
-            List<MyPNR> extractedPNR = new List<MyPNR>();
+            List<MyPNR> ExtractHierarchy = new List<MyPNR>();
             using (var package = new ExcelPackage(file))
             {
                 ExcelWorksheet worksheet = package.Workbook.Worksheets.FirstOrDefault();
                 int rows = worksheet.Dimension.Rows;
-                _colNb = worksheet.Dimension.Columns;
-                for (int i = 1; i < _colNb + 1; i++)
+                int col = worksheet.Dimension.Columns;
+                for (int i = 1; i < col + 1; i++)
                 {
-                    if (colInfo == null)
+                    for (int j = 1; j < rows + 1; j++)
                     {
-                        for (int j = 1; j < rows + 1; j++)
+                        MyPNR curPNR = new MyPNR();
+                        if (worksheet.Cells[j, i].Value.ToString() != null)
                         {
-                            MyPNR curPNR = new MyPNR();
-                            if (worksheet.Cells[j, i].Value != null)
+                            string PNR = worksheet.Cells[j, i].Value.ToString();
+                            if (!PNRDic.Keys.Contains(PNR))
                             {
-                                curPNR.PNR = worksheet.Cells[j, i].Value.ToString();
-                                curPNR.Group = group;
-                                curPNR.Family = worksheet.Cells[1, i].Value.ToString();
-                                extractedPNR.Add(curPNR);
                                 if (group == "S&C")
                                     PNRSNC.Add(curPNR.PNR);
                                 else
                                     PNRPMS.Add(curPNR.PNR);
+                                curPNR.Family = worksheet.Cells[1, i].Value.ToString();
+                                curPNR.Group = group;
+                                curPNR.PNR = worksheet.Cells[j, i].Value.ToString();
+                                curPNR.Sales = 0;
+                                curPNR.UnitSold = 0;
+                                PNRDic.Add(PNR, curPNR);
                             }
-                        }
-                    }
-                    //if in this loop, we are going inside of the main file -- pbly KE24
-                    else
-                    {
-                        if (colInfo.Keys.Contains(worksheet.Cells[1, i].Value.ToString()))
-                        {
-                            for (int j = 1; j < rows + 1; j++)
-                            {
-                                MyPNR curPNR = new MyPNR();
-                                if (worksheet.Cells[j, i].Value != null)
-                                {
-                                    curPNR.Group = "unknown";
-                                    curPNR.Family = "unknown";
-                                    curPNR.PNR = worksheet.Cells[j, i].Value.ToString();
-                                    extractedPNR.Add(curPNR);
-                                }
-                            }
+                            else
+                                Console.WriteLine("DOUBLON: " + PNR);
                         }
                     }
                 }
             }
-            return extractedPNR;
+            return ExtractHierarchy;
+        }
+
+        private void GenerateDB(FileInfo file)
+        {
+            using (var package = new ExcelPackage(file))
+            {
+                ExcelWorksheet worksheet = package.Workbook.Worksheets.FirstOrDefault();
+                int rows = worksheet.Dimension.Rows;
+                for (int j = 1; j < rows + 1; j++)
+                {
+                    if(worksheet.Cells[j, _productCol].Value != null)
+                    {
+                        string PNR = worksheet.Cells[j, _productCol].Value.ToString();
+                        if (PNRDic.Keys.Contains(PNR))
+                        {
+                            PNRDic[PNR].Sales += Convert.ToDouble(worksheet.Cells[j, _salesCol].Value);
+                            PNRDic[PNR].UnitSold += Convert.ToDouble(worksheet.Cells[j, _unitSoldCol].Value);
+                        }
+                        else
+                        {
+                            MyPNR curPNR = new MyPNR();
+                            curPNR.PNR = PNR;
+                            curPNR.Family = "unknown";
+                            curPNR.Group = "unknown";
+                            curPNR.Sales = Convert.ToDouble(worksheet.Cells[j, _salesCol].Value);
+                            curPNR.UnitSold = Convert.ToDouble(worksheet.Cells[j, _unitSoldCol].Value);
+                            PNRDic.Add(PNR, curPNR);
+                        }
+                    }
+                } 
+            }
         }
 
         private List<string> FindUnique(List<MyPNR> pnrList)
