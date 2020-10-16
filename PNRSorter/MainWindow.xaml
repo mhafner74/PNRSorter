@@ -8,11 +8,45 @@
         mc:Ignorable="d"
         Title="PNR Sorter" Height="450" Width="800">
     <Grid>
-        <Button Content="CLICK" HorizontalAlignment="Left" Height="112" Margin="214,214,0,0" VerticalAlignment="Top" Width="358" Command="{Binding TestCommand}"/>
-        <Button Content="Go" HorizontalAlignment="Left" Height="26" Margin="299,47,0,0" VerticalAlignment="Top" Width="107" Command="{Binding TestCommand}"/>
-        <Label Content="PNR number" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="75,47,0,0"/>
-        <TextBox Text="{Binding PNRSearch, UpdateSourceTrigger=PropertyChanged}" behaviors:AutoCompleteBehavior.AutoCompleteItemsSource="{Binding PNRList}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Margin="171,51,0,0"/>
-        <ComboBox Text="{Binding PNRSearch}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Margin="171,123,0,0"/>
+        <Button Content="CLICK" HorizontalAlignment="Left" Height="44" Margin="632,347,0,0" VerticalAlignment="Top" Width="144" Command="{Binding TestCommand}"/>
+        <Button Content="Go" HorizontalAlignment="Left" Height="26" Margin="642,40,0,0" VerticalAlignment="Top" Width="107" Command="{Binding DisplayDataCommand}"/>
+        <Label Content="PNR number" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="418,40,0,0"/>
+        <TextBox Height="23" Text="{Binding PNRSearch, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" behaviors:AutoCompleteBehavior.AutoCompleteItemsSource="{Binding PNRList}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Margin="514,44,0,0"/>
+        <Label Content="Sales" HorizontalAlignment="Left" Margin="435,79,0,0" VerticalAlignment="Top"/>
+        <TextBox HorizontalAlignment="Left" Height="23" Margin="477,83,0,0" TextWrapping="Wrap" Text="{Binding CurSales}" VerticalContentAlignment="Center" TextAlignment="Center" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
+        <Label Content="Quantity sold" HorizontalAlignment="Left" Margin="391,110,0,0" VerticalAlignment="Top"/>
+        <TextBox HorizontalAlignment="Left" Height="23" Margin="477,114,0,0" TextWrapping="Wrap" Text="{Binding CurQt}" VerticalContentAlignment="Center" TextAlignment="Center" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
+        <Label Content="Family" HorizontalAlignment="Left" Margin="428,172,0,0" VerticalAlignment="Top"/>
+        <TextBox HorizontalAlignment="Left" Height="23" Margin="477,144,0,0" TextWrapping="Wrap" Text="{Binding CurGroup}" VerticalContentAlignment="Center" TextAlignment="Center" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
+        <Label Content="Group" HorizontalAlignment="Left" Margin="429,141,0,0" VerticalAlignment="Top"/>
+        <TextBox HorizontalAlignment="Left" Height="23" Margin="477,175,0,0" TextWrapping="Wrap" Text="{Binding CurFam}" VerticalContentAlignment="Center" TextAlignment="Center" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
+        <Label Content="{Binding ErrorMsg}" Foreground="IndianRed" FontStyle="Italic" HorizontalAlignment="Left" Height="28" Margin="0,391,0,0" VerticalAlignment="Top" Width="792"/>
+        <Label Content="Filters" HorizontalAlignment="Left" Margin="187,10,0,0" VerticalAlignment="Top"/>
+        <Label Content="Sales min" HorizontalAlignment="Left" Margin="8,37,0,0" VerticalAlignment="Top"/>
+        <TextBox Height="23" Text="{Binding MinSales}" VerticalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Margin="73,41,0,0"/>
+        <Label Content="PNR" HorizontalAlignment="Left" Margin="195,37,0,0" VerticalAlignment="Top"/>
+        <TextBox Height="23" Text="{Binding PNRFilter}" VerticalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Margin="246,41,0,0"/>
+        <Button Content="FILTER" HorizontalAlignment="Left" Height="44" Margin="328,236,0,0" VerticalAlignment="Top" Width="144" Command="{Binding FilterCommand}"/>
+        <ListBox Margin="26,93,491,33"
+                 ItemsSource="{Binding ToBeSorted}"
+                 SelectionMode="Multiple">
+            <ListBox.Resources>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="OverridesDefaultStyle" Value="true" />
+                    <Setter Property="SnapsToDevicePixels" Value="true" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListBoxItem">
+                                <CheckBox Margin="5,2"
+                                          IsChecked="{TemplateBinding IsSelected}"
+                                          Content="{Binding }">
+                                </CheckBox>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListBox.Resources>
+        </ListBox>
 
     </Grid>
 </Window>
