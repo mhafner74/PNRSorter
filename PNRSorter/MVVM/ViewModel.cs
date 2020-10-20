@@ -8,9 +8,13 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Mime;
+using System.Runtime.Serialization;
 using System.Security;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace PNRSorter.MVVM
@@ -20,13 +24,16 @@ namespace PNRSorter.MVVM
 
         #region Fields
         private ObservableCollection<MyPNR> _myPNR;
+        private ObservableCollection<string> _groups;
+        private ObservableCollection<string> _families;
+        private ObservableCollection<Group> _hierarchy;
         private List<MyPNR> _PMS;
         private List<MyPNR> _SNC;
         private List<MyPNR> _KE24;
         private List<string> _PNRPMS;
         private List<string> _PNRSNC;
         private List<string> _uniquePNR;
-        private ObservableCollection<string> _toBeSorted;
+        private ObservableCollection<ListItems> _toBeSorted;
         private string _PNRSearch;
         private ObservableCollection<string> _PNRList;
         private int _salesCol;
@@ -36,7 +43,9 @@ namespace PNRSorter.MVVM
         private Dictionary<string, int> _colInfo = new Dictionary<string, int>();
         private Dictionary<string, MyPNR> _PNRDic;
         private double _previousMinSales;
-        private ObservableCollection<string> _toBeSortedIni;
+        private string _previousPNR;
+        private ObservableCollection<ListItems> _toBeSortedIni;
+        private Dictionary<string, List<string>> _groupToFam;
         //GUI Variables
         private double _curSales;
         private double _curQT;
@@ -45,8 +54,13 @@ namespace PNRSorter.MVVM
         private string _errorMsg;
         private double _minSales;
         private string _PNRFilter;
+        private int _nbTBS;
+        private string _selectedGroup;
+        private string _selectedFam;
+        private string _clickedPNR;
+        private Group _selectedItem;
         //test variables
-        private List<string> pouet;
+        private string pouet;
         #endregion
 
         #region Properties
@@ -55,6 +69,21 @@ namespace PNRSorter.MVVM
         {
             get => _myPNR;
             set { _myPNR = value; OnPropertyChanged("MyPNR"); }
+        }
+        public ObservableCollection<string> Groups
+        {
+            get => _groups;
+            set { _groups = value; GetAssociatedFam(); OnPropertyChanged("Groups"); }
+        }
+        public ObservableCollection<string> Families
+        {
+            get => _families;
+            set { _families = value; GetAssociatedGroup(); OnPropertyChanged("Families"); }
+        }
+        public ObservableCollection<Group> Hierarchy
+        {
+            get => _hierarchy;
+            set { _hierarchy = value; OnPropertyChanged("Hierarchy"); }
         }
         public List<MyPNR> PMS
         {
@@ -91,10 +120,10 @@ namespace PNRSorter.MVVM
             get => _uniquePNR;
             set { _uniquePNR = value; OnPropertyChanged("UniquePNR"); }
         }
-        public ObservableCollection<string> ToBeSorted
+        public ObservableCollection<ListItems> ToBeSorted
         {
             get => _toBeSorted;
-            set { _toBeSorted = value; OnPropertyChanged("ToBeSorted"); }
+            set { _toBeSorted = value; UpdateCount(); OnPropertyChanged("ToBeSorted"); }
         }
         public ObservableCollection<string> PNRList
         {
@@ -110,6 +139,11 @@ namespace PNRSorter.MVVM
         {
             get => _PNRDic;
             set { _PNRDic = value; OnPropertyChanged("PNRDic"); }
+        }
+        public Dictionary<string, List<string>> GroupToFam
+        {
+            get => _groupToFam;
+            set { _groupToFam = value; OnPropertyChanged("GroupToFam"); }
         }
         #endregion
         #region GUI prop
@@ -136,17 +170,51 @@ namespace PNRSorter.MVVM
         public string ErrorMsg
         {
             get => _errorMsg;
-            set { _errorMsg = value;OnPropertyChanged("ErrorMsg"); }
+            set { _errorMsg = value; OnPropertyChanged("ErrorMsg"); }
         }
         public double MinSales
         {
             get => _minSales;
-            set { _minSales = value; OnPropertyChanged("MinSales"); }
+            set { _minSales = value; Update(); OnPropertyChanged("MinSales"); }
         }
         public string PNRFilter
         {
             get => _PNRFilter;
-            set { _PNRFilter = value; OnPropertyChanged("PNRFilter"); }
+            set { _PNRFilter = value; Update(); OnPropertyChanged("PNRFilter"); }
+        }
+        public int NbTBS
+        {
+            get => _nbTBS;
+            set { _nbTBS = value; OnPropertyChanged("NbTBS"); }
+        }
+        public string SelectedGroup
+        {
+            get => _selectedGroup;
+            set { _selectedGroup = value; GetAssociatedFam(); OnPropertyChanged("SelectedGroup"); }
+        }
+        public string SelectedFam
+        {
+            get => _selectedFam;
+            set { _selectedFam = value; GetAssociatedGroup(); OnPropertyChanged("SelectedFam"); }
+        }
+        public string ClickedPNR
+        {
+            get => _clickedPNR;
+            set { _clickedPNR = value; OnPropertyChanged("ClickedPNR"); }
+        }
+        #endregion
+        #region Edit win
+        public Group SelectedItem
+        {
+            get => _selectedItem;
+            set { _selectedItem = value; OnPropertyChanged("SelectedItem"); }
+        }
+        #endregion
+        #region Test
+        public string Pouet
+        {
+            get => pouet;
+            set { pouet = value; Console.WriteLine("POUETPOUETPOUETPOUET" + Pouet); OnPropertyChanged("Pouet"); }
         }
         #endregion
         #endregion
@@ -154,7 +222,10 @@ namespace PNRSorter.MVVM
         #region Commands
         public ICommand TestCommand { get; set; }
         public ICommand DisplayDataCommand { get; set; }
-        public ICommand FilterCommand { get; set; }
+        public ICommand UpdateCommand { get; set; }
+        public ICommand ResetCmd { get; set; }
+        public ICommand SelectAllCmd { get; set; }
+        public ICommand EditCmd { get; set; }
         #endregion
 
         #region Initialise
@@ -165,18 +236,29 @@ namespace PNRSorter.MVVM
             //Commands
             TestCommand = new RelayCommand(o => test(), o => true);
             DisplayDataCommand = new RelayCommand(o => DisplayData(), o => true);
-            FilterCommand = new RelayCommand(o => Filter(), o => true);
+            UpdateCommand = new RelayCommand(o => Update(), o => true);
+            ResetCmd = new RelayCommand(o => Reset(), o => true);
+            SelectAllCmd = new RelayCommand(o => SelectAll(), o => true);
+            EditCmd = new RelayCommand(o => Edit(), o => true);
             //Extracting data
             FileInfo SNCFile = new FileInfo(@"C:\Users\msag\Desktop\PNRSorter\Families_S_C_v3.xlsx");
             FileInfo PMSFile = new FileInfo(@"C:\Users\msag\Desktop\PNRSorter\Families_PMS_v3.xlsx");
             FileInfo KE24File = new FileInfo(@"C:\Users\msag\Desktop\PNRSorter\KE24_Extract_Total.xlsx");
             //List for the autocompletion
             PNRDic = new Dictionary<string, MyPNR>();
+            //List of families + groups
+            Groups = new ObservableCollection<string>() { "", "S&C", "PMS" };
+            GroupToFam = new Dictionary<string, List<string>>();
+            GroupToFam.Add("",new List<string>());
+            GroupToFam.Add("S&C",new List<string>());
+            GroupToFam.Add("PMS", new List<string>());
             //List of already classified PNRs
             PNRPMS = new List<string>();
             PNRSNC = new List<string>();
             SNC = ExtractHierarchy(SNCFile, "S&C");
             PMS = ExtractHierarchy(PMSFile, "PMS");
+            Hierarchy = new ObservableCollection<Group>();
+            Families = new ObservableCollection<string>();
             //Selecting the desired values
             colInfo = new Dictionary<string, int>();
             colInfo.Add("Product", -1);
@@ -188,9 +270,10 @@ namespace PNRSorter.MVVM
             _productCol = colInfo["Product"];
             _salesCol = colInfo["Sales"];
             _unitSoldCol = colInfo["Billing Quantity"];
-            ToBeSorted = new ObservableCollection<string>();
-            _toBeSortedIni = new ObservableCollection<string>();
+            ToBeSorted = new ObservableCollection<ListItems>();
+            _toBeSortedIni = new ObservableCollection<ListItems>();
             GenerateDB(KE24File);
+            _nbTBS = ToBeSorted.Count();
             PNRList = new ObservableCollection<string>(PNRDic.Keys.ToList());
             //Isolating PNRs
             //UniquePNR = FindUnique(KE24);
@@ -203,7 +286,9 @@ namespace PNRSorter.MVVM
             ErrorMsg = "";
             MinSales = 0;
             PNRFilter = "";
+            SelectedGroup = "";
             //Verification procedures
+            Pouet = "";
         }
         #endregion
 
@@ -230,19 +315,69 @@ namespace PNRSorter.MVVM
                 ErrorMsg = "Something went wrong, please check PNR";
             }
         }
+
+        private void Reset()
+        {
+            MinSales = 0;
+            PNRFilter = "";
+            ToBeSorted = _toBeSortedIni;
+            _nbTBS = ToBeSorted.Count();
+            //unselecting all PNR
+            foreach (var pnr in ToBeSorted)
+                pnr.IsSelected = false;
+        }
+
+        private void SelectAll()
+        {
+            foreach (var pnr in ToBeSorted)
+                pnr.IsSelected = true;
+        }
+
+        private void Update()
+        {
+            List<ListItems> tempString = new List<ListItems>();
+            if ((MinSales < _previousMinSales) || PNRFilter != _previousPNR)
+                ToBeSorted = _toBeSortedIni;
+            foreach (var pnr in ToBeSorted)
+            {
+                if ((PNRFilter != null)&&(PNRDic[pnr.PNRName].Sales > MinSales) && pnr.PNRName.StartsWith(PNRFilter))
+                    tempString.Add(pnr);
+            }
+            //ToBeSorted.Clear();
+            _previousMinSales = MinSales;
+            _previousPNR = PNRFilter;
+            ToBeSorted = new ObservableCollection<ListItems>(tempString);
+        }
+
+        private void UpdateCount()
+        {
+            NbTBS = ToBeSorted.Count();
+        }
+
+        private void Edit()
+        {
+            foreach (var group in Groups)
+            {
+                ObservableCollection<Family> famCollection = new ObservableCollection<Family>();
+                foreach (var fam in GroupToFam[group])
+                    famCollection.Add(new Family(fam));
+                Hierarchy.Add(new Group(group, famCollection));
+            }
+            EditGroupsAndFamilies editWin = new EditGroupsAndFamilies();
+            editWin.Show();
+        }
         #endregion
 
         public void test()
         {
             //var file = new FileInfo(@"L:\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\Families_PMS_v2.xlsx");
             //Console.WriteLine("total unique: " + UniquePNR.Count());
-            Console.WriteLine("total to be sorted: " + ToBeSorted.Count());
+            Console.WriteLine("POUET" + SelectedItem);
         }
 
         #region Private Methods
         private List<MyPNR> ExtractHierarchy(FileInfo file, string group)
         {
-            pouet = new List<string>();
             List<MyPNR> ExtractHierarchy = new List<MyPNR>();
             using (var package = new ExcelPackage(file))
             {
@@ -266,6 +401,8 @@ namespace PNRSorter.MVVM
                                     else
                                         PNRPMS.Add(curPNR.PNR);
                                     curPNR.Family = worksheet.Cells[1, i].Value.ToString();
+                                    if (!GroupToFam[group].Contains(curPNR.Family))
+                                        GroupToFam[group].Add(curPNR.Family);
                                     curPNR.Group = group;
                                     curPNR.PNR = worksheet.Cells[j, i].Value.ToString();
                                     curPNR.Sales = 0;
@@ -276,7 +413,7 @@ namespace PNRSorter.MVVM
                                     Console.WriteLine("DOUBLON: " + PNR);
                             }
                         }
-                        catch(Exception ex) 
+                        catch (Exception ex)
                         {
                             Console.WriteLine(ex.ToString());
                         }
@@ -295,7 +432,7 @@ namespace PNRSorter.MVVM
                 //rows have to start at 2, we don't want headers
                 for (int j = 2; j < rows + 1; j++)
                 {
-                    if(worksheet.Cells[j, _productCol].Value != null)
+                    if (worksheet.Cells[j, _productCol].Value != null)
                     {
                         string PNR = worksheet.Cells[j, _productCol].Value.ToString();
                         MyPNR curPNR = new MyPNR();
@@ -320,37 +457,16 @@ namespace PNRSorter.MVVM
                                 curPNR.Sales = Convert.ToDouble(worksheet.Cells[j, _salesCol].Value);
                                 curPNR.UnitSold = Convert.ToDouble(worksheet.Cells[j, _unitSoldCol].Value);
                                 PNRDic.Add(PNR, curPNR);
-                                ToBeSorted.Add(PNR);
-                                _toBeSortedIni.Add(PNR);
+                                var loc = new ListItems();
+                                loc.PNRName = PNR;
+                                loc.IsSelected = false;
+                                ToBeSorted.Add(loc);
+                                _toBeSortedIni.Add(loc);
                             }
                         }
-                        if ((PNR == "200-582-200-021"))
-                        {
-                            Console.WriteLine("sales:" + worksheet.Cells[j, _salesCol].Text);
-                            Console.WriteLine("billing qt:" + worksheet.Cells[j, _unitSoldCol].Text);
-                            pouet.Add("o");
-                        }
                     }
-                } 
+                }
             }
-            Console.WriteLine(pouet.Count().ToString());
-            Console.WriteLine("Total sales:" + PNRDic["200-582-200-021"].Sales.ToString());
-            Console.WriteLine("Total billing qt:" + PNRDic["200-582-200-021"].UnitSold.ToString());
-        }
-
-        private void Filter()
-        {
-            List<string> tempString = new List<string>();
-            if (MinSales < _previousMinSales)
-                ToBeSorted = _toBeSortedIni;
-            foreach(var pnr in ToBeSorted)
-            {
-                if ((PNRDic[pnr].Sales > MinSales) && pnr.Contains(PNRFilter))
-                    tempString.Add(pnr);
-            }
-            //ToBeSorted.Clear();
-            _previousMinSales = MinSales;
-            ToBeSorted = new ObservableCollection<string>(tempString);
         }
 
         private List<string> FindUnique(List<MyPNR> pnrList)
@@ -398,7 +514,6 @@ namespace PNRSorter.MVVM
             return;
         }
         #endregion
-
         #region Research
         private MyPNR PNRFetcher(FileInfo excel, string pnrNb)
         {
@@ -413,6 +528,47 @@ namespace PNRSorter.MVVM
             MyPNR pnr = new MyPNR();
             return pnr;
         }
+
+        private void GetAssociatedFam()
+        {
+            {
+                if (SelectedGroup != null)
+                {
+                    Families.Clear();
+                    if (SelectedGroup == "")
+                    {
+                        foreach (var group in Groups)
+                        {
+                            foreach (var fam in GroupToFam[group])
+                                Families.Add(fam);
+                        }
+                    }
+                    else
+                    {
+                        foreach (var fam in GroupToFam[SelectedGroup])
+                            Families.Add(fam);
+                    }
+                }
+            }
+        }
+
+        private void GetAssociatedGroup()
+        {
+            if ((SelectedGroup == null) || (SelectedGroup == ""))
+            {
+                if (SelectedFam != null)
+                {
+                    foreach (var group in Groups)
+                    {
+                        if (GroupToFam[group].Contains(SelectedFam))
+                            SelectedGroup = group;
+                    }
+                }
+            }
+        }
+        #endregion
+
+        #region Event
         #endregion
     }
 }

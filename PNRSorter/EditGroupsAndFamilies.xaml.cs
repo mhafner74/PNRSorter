@@ -1,5 +1,4 @@
-﻿using PNRSorter.MVVM;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,22 +10,17 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 namespace PNRSorter
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interaction logic for EditGroupsAndFamilies.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class EditGroupsAndFamilies : Window
     {
-        private ViewModel _vm;
-
-        public MainWindow()
+        public EditGroupsAndFamilies()
         {
-            //_vm = new ViewModel();
-            //this.DataContext = _vm;
             InitializeComponent();
         }
     }

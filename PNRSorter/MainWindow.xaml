@@ -5,41 +5,47 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:behaviors="clr-namespace:WPFTextBoxAutoComplete;assembly=WPFTextBoxAutoComplete"
         xmlns:local="clr-namespace:PNRSorter"
+        DataContext="{StaticResource VM}"
         mc:Ignorable="d"
         Title="PNR Sorter" Height="450" Width="800">
     <Grid>
         <Button Content="CLICK" HorizontalAlignment="Left" Height="44" Margin="632,347,0,0" VerticalAlignment="Top" Width="144" Command="{Binding TestCommand}"/>
-        <Button Content="Go" HorizontalAlignment="Left" Height="26" Margin="642,40,0,0" VerticalAlignment="Top" Width="107" Command="{Binding DisplayDataCommand}"/>
-        <Label Content="PNR number" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="418,40,0,0"/>
-        <TextBox Height="23" Text="{Binding PNRSearch, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" behaviors:AutoCompleteBehavior.AutoCompleteItemsSource="{Binding PNRList}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Margin="514,44,0,0"/>
-        <Label Content="Sales" HorizontalAlignment="Left" Margin="435,79,0,0" VerticalAlignment="Top"/>
-        <TextBox HorizontalAlignment="Left" Height="23" Margin="477,83,0,0" TextWrapping="Wrap" Text="{Binding CurSales}" VerticalContentAlignment="Center" TextAlignment="Center" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
-        <Label Content="Quantity sold" HorizontalAlignment="Left" Margin="391,110,0,0" VerticalAlignment="Top"/>
-        <TextBox HorizontalAlignment="Left" Height="23" Margin="477,114,0,0" TextWrapping="Wrap" Text="{Binding CurQt}" VerticalContentAlignment="Center" TextAlignment="Center" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
-        <Label Content="Family" HorizontalAlignment="Left" Margin="428,172,0,0" VerticalAlignment="Top"/>
-        <TextBox HorizontalAlignment="Left" Height="23" Margin="477,144,0,0" TextWrapping="Wrap" Text="{Binding CurGroup}" VerticalContentAlignment="Center" TextAlignment="Center" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
-        <Label Content="Group" HorizontalAlignment="Left" Margin="429,141,0,0" VerticalAlignment="Top"/>
-        <TextBox HorizontalAlignment="Left" Height="23" Margin="477,175,0,0" TextWrapping="Wrap" Text="{Binding CurFam}" VerticalContentAlignment="Center" TextAlignment="Center" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
+        <Button Content="Go" HorizontalAlignment="Left" Height="26" Margin="636,217,0,0" VerticalAlignment="Top" Width="107" Command="{Binding DisplayDataCommand}"/>
+        <Label Content="PNR number" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="553,33,0,0"/>
+        <TextBox Height="23" Text="{Binding PNRSearch, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" behaviors:AutoCompleteBehavior.AutoCompleteItemsSource="{Binding PNRList}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="130
+                 " Margin="636,37,0,0"/>
+        <Label Content="Sales" HorizontalAlignment="Left" Margin="594,70,0,0" VerticalAlignment="Top"/>
+        <TextBox HorizontalAlignment="Left" Height="23" Margin="636,74,0,0" TextWrapping="Wrap" Text="{Binding CurSales}" VerticalContentAlignment="Center" TextAlignment="Center" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
+        <Label Content="Quantity sold" HorizontalAlignment="Left" Margin="550,101,0,0" VerticalAlignment="Top"/>
+        <TextBox HorizontalAlignment="Left" Height="23" Margin="636,105,0,0" TextWrapping="Wrap" Text="{Binding CurQt}" VerticalContentAlignment="Center" TextAlignment="Center" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
+        <Label Content="Family" HorizontalAlignment="Left" Margin="587,163,0,0" VerticalAlignment="Top"/>
+        <TextBox HorizontalAlignment="Left" Height="23" Margin="636,135,0,0" TextWrapping="Wrap" Text="{Binding CurGroup}" VerticalContentAlignment="Center" TextAlignment="Center" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
+        <Label Content="Group" HorizontalAlignment="Left" Margin="588,132,0,0" VerticalAlignment="Top"/>
+        <TextBox HorizontalAlignment="Left" Height="23" Margin="636,166,0,0" TextWrapping="Wrap" Text="{Binding CurFam}" VerticalContentAlignment="Center" TextAlignment="Center" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
         <Label Content="{Binding ErrorMsg}" Foreground="IndianRed" FontStyle="Italic" HorizontalAlignment="Left" Height="28" Margin="0,391,0,0" VerticalAlignment="Top" Width="792"/>
         <Label Content="Filters" HorizontalAlignment="Left" Margin="187,10,0,0" VerticalAlignment="Top"/>
         <Label Content="Sales min" HorizontalAlignment="Left" Margin="8,37,0,0" VerticalAlignment="Top"/>
-        <TextBox Height="23" Text="{Binding MinSales}" VerticalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Margin="73,41,0,0"/>
+        <TextBox Height="23" Text="{Binding MinSales, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Margin="73,41,0,0"/>
         <Label Content="PNR" HorizontalAlignment="Left" Margin="195,37,0,0" VerticalAlignment="Top"/>
-        <TextBox Height="23" Text="{Binding PNRFilter}" VerticalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Margin="246,41,0,0"/>
-        <Button Content="FILTER" HorizontalAlignment="Left" Height="44" Margin="328,236,0,0" VerticalAlignment="Top" Width="144" Command="{Binding FilterCommand}"/>
-        <ListBox Margin="26,93,491,33"
-                 ItemsSource="{Binding ToBeSorted}"
+        <TextBox Height="23" Text="{Binding PNRFilter, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Margin="246,41,0,0"/>
+        <Button Content="Reset filters" HorizontalAlignment="Left" Height="24" Margin="306,362,0,0" VerticalAlignment="Top" Width="87" Command="{Binding ResetCmd}"/>
+        <Button Content="Select All" HorizontalAlignment="Left" Height="24" Margin="306,334,0,0" VerticalAlignment="Top" Width="87" Command="{Binding SelectAllCmd}"/>
+        <Button Content="Edit Groups and Families" HorizontalAlignment="Left" Height="24" Margin="360,200,0,0" VerticalAlignment="Top" Width="138" Command="{Binding EditCmd}"/>
+        <ListBox Margin="26,101,491,33"
+                 ItemsSource="{Binding ToBeSorted, Mode=TwoWay}"
                  SelectionMode="Multiple">
+            <!--<DataTemplate>
+                <CheckBox Content="{Binding Path=ToBeSorted.PNRName}"
+                          IsChecked="{Binding Path=ToBeSorted.IsSelected, Mode=TwoWay}"/>
+            </DataTemplate>-->
             <ListBox.Resources>
                 <Style TargetType="ListBoxItem">
-                    <Setter Property="OverridesDefaultStyle" Value="true" />
-                    <Setter Property="SnapsToDevicePixels" Value="true" />
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="ListBoxItem">
                                 <CheckBox Margin="5,2"
-                                          IsChecked="{TemplateBinding IsSelected}"
-                                          Content="{Binding }">
+                                          IsChecked="{Binding IsSelected}"
+                                          Content="{Binding PNRName}">
                                 </CheckBox>
                             </ControlTemplate>
                         </Setter.Value>
@@ -47,6 +53,12 @@
                 </Style>
             </ListBox.Resources>
         </ListBox>
+        <Label Content="Family" HorizontalAlignment="Left" Margin="317,149,0,0" VerticalAlignment="Top"/>
+        <Label Content="Group" HorizontalAlignment="Left" Margin="317,118,0,0" VerticalAlignment="Top"/>
+        <ComboBox ItemsSource="{Binding Groups}" SelectedItem="{Binding SelectedGroup}" HorizontalAlignment="Left" Margin="378,122,0,0" VerticalAlignment="Top" Width="120"/>
+        <ComboBox ItemsSource="{Binding Families}" SelectedItem="{Binding SelectedFam}" HorizontalAlignment="Left" Margin="378,153,0,0" VerticalAlignment="Top" Width="120"/>
+        <Label Content="Number of listed unsorted items:" HorizontalAlignment="Left" Margin="26,74,0,0" VerticalAlignment="Top"/>
+        <Label Content="{Binding NbTBS, NotifyOnSourceUpdated=True}" HorizontalAlignment="Left" Margin="210,74,0,0" VerticalAlignment="Top"/>
 
     </Grid>
 </Window>
