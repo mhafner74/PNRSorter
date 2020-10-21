@@ -58,7 +58,9 @@ namespace PNRSorter.MVVM
         private string _selectedGroup;
         private string _selectedFam;
         private string _clickedPNR;
-        private Group _selectedItem;
+        //Edit windows
+        private Group _selectedGroupItem;
+        private Family _selectedFamilyItem;
         //test variables
         private string pouet;
         #endregion
@@ -204,10 +206,15 @@ namespace PNRSorter.MVVM
         }
         #endregion
         #region Edit win
-        public Group SelectedItem
+        public Group SelectedGroupItem
         {
-            get => _selectedItem;
-            set { _selectedItem = value; OnPropertyChanged("SelectedItem"); }
+            get => _selectedGroupItem;
+            set { _selectedGroupItem = value; OnPropertyChanged("SelectedGroupItem"); }
+        }
+        public Family SelectedFamilyItem
+        {
+            get => _selectedFamilyItem;
+            set { _selectedFamilyItem = value; OnPropertyChanged("SelectedFamilyItem"); }
         }
         #endregion
         #region Test
@@ -241,9 +248,9 @@ namespace PNRSorter.MVVM
             SelectAllCmd = new RelayCommand(o => SelectAll(), o => true);
             EditCmd = new RelayCommand(o => Edit(), o => true);
             //Extracting data
-            FileInfo SNCFile = new FileInfo(@"C:\Users\msag\Desktop\PNRSorter\Families_S_C_v3.xlsx");
-            FileInfo PMSFile = new FileInfo(@"C:\Users\msag\Desktop\PNRSorter\Families_PMS_v3.xlsx");
-            FileInfo KE24File = new FileInfo(@"C:\Users\msag\Desktop\PNRSorter\KE24_Extract_Total.xlsx");
+            FileInfo SNCFile = new FileInfo(@"C:\Users\Max\Desktop\Prog\Families_S_C_v3.xlsx");
+            FileInfo PMSFile = new FileInfo(@"C:\Users\Max\Desktop\Prog\Families_PMS_v3.xlsx");
+            FileInfo KE24File = new FileInfo(@"C:\Users\Max\Desktop\Prog\KE24_2020.xlsx");
             //List for the autocompletion
             PNRDic = new Dictionary<string, MyPNR>();
             //List of families + groups
@@ -372,7 +379,10 @@ namespace PNRSorter.MVVM
         {
             //var file = new FileInfo(@"L:\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\Families_PMS_v2.xlsx");
             //Console.WriteLine("total unique: " + UniquePNR.Count());
-            Console.WriteLine("POUET" + SelectedItem);
+            if(SelectedGroupItem.GetType() == typeof(Group))
+                Console.WriteLine("GROUP" + SelectedGroupItem);
+            else
+                Console.WriteLine("FAMILY" + SelectedFamilyItem);
         }
 
         #region Private Methods
@@ -514,6 +524,7 @@ namespace PNRSorter.MVVM
             return;
         }
         #endregion
+
         #region Research
         private MyPNR PNRFetcher(FileInfo excel, string pnrNb)
         {
