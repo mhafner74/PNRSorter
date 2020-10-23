@@ -8,7 +8,7 @@ using System.Windows.Resources;
 
 namespace PNRSorter.MVVM
 {
-    public class Family:VMBase
+    public class Family: VMBase, ITreeItem 
     {
         private string _familyName;
         public string FamilyName
@@ -22,5 +22,9 @@ namespace PNRSorter.MVVM
             FamilyName = name;
         }
 
+        public string GetName()
+        {
+            return _familyName;
+        }
     }
 }

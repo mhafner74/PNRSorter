@@ -8,7 +8,7 @@
         xmlns:MVVM="clr-namespace:PNRSorter.MVVM"
         xmlns:Utility="clr-namespace:PNRSorter.Utility" xmlns:e="http://schemas.microsoft.com/expression/2010/interactivity"
         mc:Ignorable="d"
-        Title="EditGroupsAndFamilies" Height="462.465" Width="376.177">
+        Title="EditGroupsAndFamilies" Height="444.465" Width="422.677">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="300*"/>
@@ -16,7 +16,7 @@
         </Grid.ColumnDefinitions>
         <TreeView Margin="10" ItemsSource="{Binding Hierarchy}">
             <e:Interaction.Behaviors>
-                <Utility:BindableSelectedItemBehavior SelectedItem="{Binding SelectedItem, Mode=TwoWay}" />
+                <Utility:BindableSelectedItemBehavior SelectedItem="{Binding SelectedTreeItem, Mode=TwoWay}" />
             </e:Interaction.Behaviors>
             <TreeView.ItemTemplate>
                 <HierarchicalDataTemplate ItemsSource="{Binding Families}" DataType="{x:Type MVVM:Group}">
@@ -29,6 +29,17 @@
                 </HierarchicalDataTemplate>
             </TreeView.ItemTemplate>
         </TreeView>
-        <Button Content="CLICK" HorizontalAlignment="Left" Height="44" Margin="10,253,0,0" VerticalAlignment="Top" Width="74" Command="{Binding TestCommand}" Grid.Column="1"/>
+        <Button Content="Save" HorizontalAlignment="Left" Height="21" Margin="53,382,0,0" VerticalAlignment="Top" Width="56" Command="{Binding TestCommand}" Grid.Column="1"/>
+        <Label Content="Modify" Grid.Column="1" HorizontalAlignment="Center"  VerticalAlignment="Top"/>
+        <TextBox Grid.Column="1" HorizontalAlignment="Center" Height="23" Margin="0,29" TextWrapping="Wrap" TextAlignment="Center" Text="{Binding ModifySelection}" VerticalAlignment="Top" MinWidth="100" Width="Auto"/>
+        <Button Content="Rename" Grid.Column="1" HorizontalAlignment="Center" Margin="0,57,0,0" VerticalAlignment="Top" Width="80" Command="{Binding RenameItemCmd}"/>
+        <Button Content="Delete" Grid.Column="1" HorizontalAlignment="Center" Margin="0,77,0,0" VerticalAlignment="Top" Width="80" Command="{Binding DeleteItemCmd}"/>
+        <Label Content="Add Group" Grid.Column="1" HorizontalAlignment="Center" Margin="0,129" VerticalAlignment="Top"/>
+        <TextBox Grid.Column="1" HorizontalAlignment="Center" Height="23" Margin="0,160" TextWrapping="Wrap" Text="{Binding NewGroup, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Top" MinWidth="100" Width="Auto"/>
+        <Button Content="Add" Grid.Column="1" HorizontalAlignment="Center" Margin="0,194,0,0" VerticalAlignment="Top" Width="80" Command="{Binding AddGroupCmd}"/>
+        <Label Content="Add Family" Grid.Column="1" HorizontalAlignment="Center" Margin="23,239,27,0" VerticalAlignment="Top"/>
+        <ComboBox ItemsSource="{Binding GroupList, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding MyGroup}" Grid.Column="1" HorizontalAlignment="Center" Margin="0,265,0,0" VerticalAlignment="Top" MinWidth="100" Width="auto"/>
+        <TextBox Grid.Column="1" HorizontalAlignment="Center" Height="23" Margin="0,291,0,0" TextWrapping="Wrap" Text="{Binding NewFamily, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Top" MinWidth="100" Width="Auto"/>
+        <Button Content="Add" Grid.Column="1" HorizontalAlignment="Center" Margin="0,324,0,0" VerticalAlignment="Top" Width="80" Command="{Binding AddFamilyCmd}"/>
     </Grid>
 </Window>

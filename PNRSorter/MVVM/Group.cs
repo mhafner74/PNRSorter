@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace PNRSorter.MVVM
 {
-    public class Group : VMBase
+    public class Group : VMBase, ITreeItem
     {
         private ObservableCollection<Family> _families;
         public ObservableCollection<Family> Families
@@ -30,6 +30,11 @@ namespace PNRSorter.MVVM
         {
             GroupName = name;
             _families = famList;
+        }
+
+        public string GetName()
+        {
+            return _groupName;
         }
     }
 }

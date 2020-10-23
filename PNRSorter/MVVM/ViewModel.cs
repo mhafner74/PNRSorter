@@ -1,9 +1,13 @@
-﻿using OfficeOpenXml;
+﻿using Microsoft.Expression.Interactivity.Core;
+using Newtonsoft.Json;
+using OfficeOpenXml;
+using OfficeOpenXml.ConditionalFormatting;
 using PNRSorter.Utility;
 using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Data;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -23,6 +27,11 @@ namespace PNRSorter.MVVM
     {
 
         #region Fields
+        //Config file chaos
+        private FileInfo _configFile;
+        private ObservableCollection<FileInfo> _fileList;
+        private FileInfo _selectedFile;
+        #region PNR manipulation
         private ObservableCollection<MyPNR> _myPNR;
         private ObservableCollection<string> _groups;
         private ObservableCollection<string> _families;
@@ -46,7 +55,8 @@ namespace PNRSorter.MVVM
         private string _previousPNR;
         private ObservableCollection<ListItems> _toBeSortedIni;
         private Dictionary<string, List<string>> _groupToFam;
-        //GUI Variables
+        #endregion
+        #region GUI variables
         private double _curSales;
         private double _curQT;
         private string _curGroup;
@@ -58,14 +68,37 @@ namespace PNRSorter.MVVM
         private string _selectedGroup;
         private string _selectedFam;
         private string _clickedPNR;
-        //Edit windows
-        private Group _selectedGroupItem;
-        private Family _selectedFamilyItem;
+        #endregion
+        #region Edit window
+        private Object _selectedTreeItem;
+        private string _modifySelection;
+        private string _newGroup;
+        private string _newFamily;
+        private ObservableCollection<string> _groupList;
+        private string _myGroup;
+        #endregion
         //test variables
         private string pouet;
         #endregion
 
         #region Properties
+        #region Config File Chaos
+        public FileInfo ConfigFile
+        {
+            get => _configFile;
+            set { _configFile = value; OnPropertyChanged("ConfigFile"); }
+        }
+        public ObservableCollection<FileInfo> FileList
+        {
+            get => _fileList;
+            set { _fileList = value; OnPropertyChanged("FileList"); }
+        }
+        public FileInfo SelectedFile
+        {
+            get => _selectedFile;
+            set { _selectedFile = value; OnPropertyChanged("SelectedFile"); }
+        }
+        #endregion
         #region Backend prop
         public ObservableCollection<MyPNR> MyPNR
         {
@@ -85,7 +118,11 @@ namespace PNRSorter.MVVM
         public ObservableCollection<Group> Hierarchy
         {
             get => _hierarchy;
-            set { _hierarchy = value; OnPropertyChanged("Hierarchy"); }
+            set 
+            { 
+                _hierarchy = value;  
+                OnPropertyChanged("Hierarchy");
+            }
         }
         public List<MyPNR> PMS
         {
@@ -177,12 +214,12 @@ namespace PNRSorter.MVVM
         public double MinSales
         {
             get => _minSales;
-            set { _minSales = value; Update(); OnPropertyChanged("MinSales"); }
+            set { _minSales = value; UpdateMainWin(); OnPropertyChanged("MinSales"); }
         }
         public string PNRFilter
         {
             get => _PNRFilter;
-            set { _PNRFilter = value; Update(); OnPropertyChanged("PNRFilter"); }
+            set { _PNRFilter = value; UpdateMainWin(); OnPropertyChanged("PNRFilter"); }
         }
         public int NbTBS
         {
@@ -206,15 +243,35 @@ namespace PNRSorter.MVVM
         }
         #endregion
         #region Edit win
-        public Group SelectedGroupItem
+        public Object SelectedTreeItem
         {
-            get => _selectedGroupItem;
-            set { _selectedGroupItem = value; OnPropertyChanged("SelectedGroupItem"); }
+            get => _selectedTreeItem;
+            set { _selectedTreeItem = value; UpdateEditWin(); OnPropertyChanged("SelectedTreeItem"); }
         }
-        public Family SelectedFamilyItem
+        public string ModifySelection
         {
-            get => _selectedFamilyItem;
-            set { _selectedFamilyItem = value; OnPropertyChanged("SelectedFamilyItem"); }
+            get => _modifySelection;
+            set { _modifySelection = value; OnPropertyChanged("ModifySelection"); }
+        }
+        public string NewGroup
+        {
+            get => _newGroup;
+            set { _newGroup = value; OnPropertyChanged("NewGroup"); }
+        }
+        public string NewFamily
+        {
+            get => _newFamily;
+            set { _newFamily = value; OnPropertyChanged("NewFamily"); }
+        }
+        public ObservableCollection<string> GroupList
+        {
+            get => _groupList;
+            set { _groupList = value; OnPropertyChanged("GroupList"); }
+        }
+        public string MyGroup
+        {
+            get => _myGroup;
+            set { _myGroup = value; OnPropertyChanged("MyGroup"); }
         }
         #endregion
         #region Test
@@ -228,11 +285,14 @@ namespace PNRSorter.MVVM
 
         #region Commands
         public ICommand TestCommand { get; set; }
-        public ICommand DisplayDataCommand { get; set; }
-        public ICommand UpdateCommand { get; set; }
+        public ICommand DisplayDataCmd { get; set; }
         public ICommand ResetCmd { get; set; }
         public ICommand SelectAllCmd { get; set; }
         public ICommand EditCmd { get; set; }
+        public ICommand DeleteItemCmd { get; set; }
+        public ICommand RenameItemCmd { get; set; }
+        public ICommand AddGroupCmd { get; set; }
+        public ICommand AddFamilyCmd { get; set; }
         #endregion
 
         #region Initialise
@@ -241,23 +301,37 @@ namespace PNRSorter.MVVM
             //Required for EEPLUS to be used
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
             //Commands
-            TestCommand = new RelayCommand(o => test(), o => true);
-            DisplayDataCommand = new RelayCommand(o => DisplayData(), o => true);
-            UpdateCommand = new RelayCommand(o => Update(), o => true);
+            TestCommand = new RelayCommand(o => test(), o => {return SelectedTreeItem != null; });
+            DisplayDataCmd = new RelayCommand(o => DisplayData(), o => true);
             ResetCmd = new RelayCommand(o => Reset(), o => true);
             SelectAllCmd = new RelayCommand(o => SelectAll(), o => true);
             EditCmd = new RelayCommand(o => Edit(), o => true);
+            DeleteItemCmd = new RelayCommand(o => DeleteItem(), o => { return SelectedTreeItem != null; });
+            RenameItemCmd = new RelayCommand(o => RenameItem(), o => { return SelectedTreeItem != null; });
+            AddGroupCmd = new RelayCommand(o => AddGroup(), o => { return NewGroup != null; });
+            AddFamilyCmd = new RelayCommand(o => AddFamily(), o => { return ((MyGroup != null) && (NewFamily != "")); });
+            //Config file location
+            ConfigFile = new FileInfo(@"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\PNRSorter\configPNRSorter.txt");
             //Extracting data
-            FileInfo SNCFile = new FileInfo(@"C:\Users\Max\Desktop\Prog\Families_S_C_v3.xlsx");
-            FileInfo PMSFile = new FileInfo(@"C:\Users\Max\Desktop\Prog\Families_PMS_v3.xlsx");
-            FileInfo KE24File = new FileInfo(@"C:\Users\Max\Desktop\Prog\KE24_2020.xlsx");
+            FileInfo SNCFile = new FileInfo(@"C:\Users\msag\Desktop\PNRSorter\Families_S_C_v3.xlsx");
+            FileInfo PMSFile = new FileInfo(@"C:\Users\msag\Desktop\PNRSorter\Families_PMS_v3.xlsx");
+            FileInfo KE24File = new FileInfo(@"C:\Users\msag\Desktop\PNRSorter\KE24_Extract_Total.xlsx");
+            SavedFile sf = new SavedFile();
+            sf.FileList = new ObservableCollection<FileInfo>();
+            sf.FileList.Add(SNCFile);
+            sf.FileList.Add(PMSFile);
+            sf.FileList.Add(KE24File);
+            LoadConfig(sf);
+            string json = JsonConvert.SerializeObject(sf);
             //List for the autocompletion
             PNRDic = new Dictionary<string, MyPNR>();
             //List of families + groups
             Groups = new ObservableCollection<string>() { "", "S&C", "PMS" };
+            //second group list used in the edit windows. Has to be different from "Groups" to allow the user not to save his modifications
+            GroupList = new ObservableCollection<string>() { "S&C", "PMS" };
             GroupToFam = new Dictionary<string, List<string>>();
-            GroupToFam.Add("",new List<string>());
-            GroupToFam.Add("S&C",new List<string>());
+            GroupToFam.Add("", new List<string>());
+            GroupToFam.Add("S&C", new List<string>());
             GroupToFam.Add("PMS", new List<string>());
             //List of already classified PNRs
             PNRPMS = new List<string>();
@@ -294,6 +368,8 @@ namespace PNRSorter.MVVM
             MinSales = 0;
             PNRFilter = "";
             SelectedGroup = "";
+            NewFamily = "";
+            //Win GUI intialisation
             //Verification procedures
             Pouet = "";
         }
@@ -340,21 +416,6 @@ namespace PNRSorter.MVVM
                 pnr.IsSelected = true;
         }
 
-        private void Update()
-        {
-            List<ListItems> tempString = new List<ListItems>();
-            if ((MinSales < _previousMinSales) || PNRFilter != _previousPNR)
-                ToBeSorted = _toBeSortedIni;
-            foreach (var pnr in ToBeSorted)
-            {
-                if ((PNRFilter != null)&&(PNRDic[pnr.PNRName].Sales > MinSales) && pnr.PNRName.StartsWith(PNRFilter))
-                    tempString.Add(pnr);
-            }
-            //ToBeSorted.Clear();
-            _previousMinSales = MinSales;
-            _previousPNR = PNRFilter;
-            ToBeSorted = new ObservableCollection<ListItems>(tempString);
-        }
 
         private void UpdateCount()
         {
@@ -365,27 +426,179 @@ namespace PNRSorter.MVVM
         {
             foreach (var group in Groups)
             {
-                ObservableCollection<Family> famCollection = new ObservableCollection<Family>();
-                foreach (var fam in GroupToFam[group])
-                    famCollection.Add(new Family(fam));
-                Hierarchy.Add(new Group(group, famCollection));
+                if(group != "")
+                {
+                    ObservableCollection<Family> famCollection = new ObservableCollection<Family>();
+                    foreach (var fam in GroupToFam[group])
+                        famCollection.Add(new Family(fam));
+                    Hierarchy.Add(new Group(group, famCollection));
+                }
             }
             EditGroupsAndFamilies editWin = new EditGroupsAndFamilies();
             editWin.Show();
         }
+
+        public void DeleteItem()
+        {
+            if (SelectedTreeItem.GetType() == typeof(Group))
+            {
+                foreach (var group in Hierarchy)
+                {
+                    if (group.GroupName == ModifySelection)
+                    {
+                        string ini = ModifySelection;
+                        Hierarchy.Remove(group);
+                        GroupList.Remove(ini);
+                        //for (int i = 0; i < GroupList.Count(); i++)
+                        //{
+                        //    if (GroupList[i] == ini)
+                        //    {
+                        //        GroupList.RemoveAt(i);
+                        //        break;
+                        //    }
+                        //}
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                foreach (var group in Hierarchy)
+                {
+                    foreach (var family in group.Families)
+                    {
+                        if (family.FamilyName == ModifySelection)
+                        {
+                            group.Families.Remove(family);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        public void RenameItem()
+        {
+            if (SelectedTreeItem.GetType() == typeof(Group))
+            {
+                foreach (var group in Hierarchy)
+                {
+                    if (group.GroupName == ((Group)SelectedTreeItem).GroupName)
+                    {
+                        //we need to keep somewhere the previous word, otherwise it cannot find it in the list GroupList
+                        string iniName = group.GroupName;
+                        group.GroupName = ModifySelection;
+                        for(int i =0; i<GroupList.Count();i++)
+                        {
+                            if(GroupList[i] == iniName)
+                            {
+                                GroupList[i] = ModifySelection;
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                foreach (var group in Hierarchy)
+                {
+                    foreach (var family in group.Families)
+                    {
+                        if (family.FamilyName == ((Family)SelectedTreeItem).FamilyName)
+                        {
+                            family.FamilyName = ModifySelection;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void AddGroup()
+        {
+            Hierarchy.Add(new Group(NewGroup, new ObservableCollection<Family>()));
+            GroupList.Add(NewGroup);
+        }
+
+        private void AddFamily()
+        {
+            foreach (var group in Hierarchy)
+            {
+                if(group.GroupName == MyGroup)
+                {
+                    group.Families.Add(new Family(NewFamily));
+                    break;
+                }
+            }
+        }
+
+        private void SaveEdits()
+        {
+            if(MessageBox.Show("Attention ma cacahuette, tu es sur le point de modifier la hierarchie des données, on continue ?", "tu crois vraiment que je n'ai rien d'autre à faire que d'écrire une caption ?", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            {
+                foreach(Group group in Hierarchy)
+                {
+                    if (!Groups.Contains(group.GroupName))
+                    {
+                    }
+                }
+            }
+        }
+
         #endregion
 
         public void test()
         {
             //var file = new FileInfo(@"L:\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\Families_PMS_v2.xlsx");
             //Console.WriteLine("total unique: " + UniquePNR.Count());
-            if(SelectedGroupItem.GetType() == typeof(Group))
-                Console.WriteLine("GROUP" + SelectedGroupItem);
+            if (SelectedTreeItem.GetType() == typeof(Group))
+                Console.WriteLine("GROUP" + SelectedTreeItem);
             else
-                Console.WriteLine("FAMILY" + SelectedFamilyItem);
+                Console.WriteLine("FAMILY" + SelectedTreeItem);
         }
 
+
         #region Private Methods
+        #region Config File Mayhem
+        private void LoadConfig(SavedFile sf)
+        {
+            if (!File.Exists(ConfigFile.FullName))
+            {
+                MessageBox.Show("No Config File Found, creating one: " + ConfigFile.FullName);
+                if (!ConfigFile.Directory.Exists)
+                {
+                    try
+                    {
+                        ConfigFile.Directory.Create();
+                    }
+                    catch
+                    {
+                        MessageBox.Show("It is not looking greate my friend, something is going wrong. Check if you are connected to VM network. If yes, contact Jason Bourne and tell him \"\"");
+                    }
+                }
+                File.Create(ConfigFile.FullName);
+                using(StreamWriter sw = ConfigFile.AppendText())
+                {
+                    sw.WriteLine("PLEASE, I BEG YOU, DO NOT MODIFY THIS FILE BY YOURSELF");
+                }
+            }
+            else
+            {
+                using(StreamReader sr = ConfigFile.OpenText())
+                {
+                    string line = sr.ReadLine();
+                    if (line.StartsWith("@"))
+                    {
+                        FileList.Add(new FileInfo(line));
+                    }
+                }
+            }
+        }
+        #endregion
+
+        #region Main window
         private List<MyPNR> ExtractHierarchy(FileInfo file, string group)
         {
             List<MyPNR> ExtractHierarchy = new List<MyPNR>();
@@ -525,6 +738,42 @@ namespace PNRSorter.MVVM
         }
         #endregion
 
+        #region Edit Win
+        private void UpdateMainWin()
+        {
+            List<ListItems> tempString = new List<ListItems>();
+            if ((MinSales < _previousMinSales) || PNRFilter != _previousPNR)
+                ToBeSorted = _toBeSortedIni;
+            foreach (var pnr in ToBeSorted)
+            {
+                if ((PNRFilter != null) && (PNRDic[pnr.PNRName].Sales > MinSales) && pnr.PNRName.StartsWith(PNRFilter))
+                    tempString.Add(pnr);
+            }
+            //ToBeSorted.Clear();
+            _previousMinSales = MinSales;
+            _previousPNR = PNRFilter;
+            ToBeSorted = new ObservableCollection<ListItems>(tempString);
+        }
+
+        private void UpdateEditWin()
+        {
+            if (SelectedTreeItem != null)
+            {
+                if (SelectedTreeItem.GetType() == typeof(Group))
+                    ModifySelection = ((Group)SelectedTreeItem).GroupName;
+                else
+                    ModifySelection = ((Family)SelectedTreeItem).FamilyName;
+            }
+        }
+
+        private void BackUpFiles()
+        {
+
+        }
+        #endregion
+
+        #endregion
+
         #region Research
         private MyPNR PNRFetcher(FileInfo excel, string pnrNb)
         {
@@ -579,7 +828,5 @@ namespace PNRSorter.MVVM
         }
         #endregion
 
-        #region Event
-        #endregion
     }
 }

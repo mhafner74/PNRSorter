@@ -10,7 +10,7 @@
         Title="PNR Sorter" Height="450" Width="800">
     <Grid>
         <Button Content="CLICK" HorizontalAlignment="Left" Height="44" Margin="632,347,0,0" VerticalAlignment="Top" Width="144" Command="{Binding TestCommand}"/>
-        <Button Content="Go" HorizontalAlignment="Left" Height="26" Margin="636,217,0,0" VerticalAlignment="Top" Width="107" Command="{Binding DisplayDataCommand}"/>
+        <Button Content="Go" HorizontalAlignment="Left" Height="26" Margin="636,217,0,0" VerticalAlignment="Top" Width="107" Command="{Binding DisplayDataCmd}"/>
         <Label Content="PNR number" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="553,33,0,0"/>
         <TextBox Height="23" Text="{Binding PNRSearch, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" behaviors:AutoCompleteBehavior.AutoCompleteItemsSource="{Binding PNRList}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="130
                  " Margin="636,37,0,0"/>
