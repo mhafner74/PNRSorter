@@ -21,8 +21,6 @@ namespace PNRSorter
     /// </summary>
     public partial class MainWindow : Window
     {
-        private ViewModel _vm;
-
         public MainWindow()
         {
             //_vm = new ViewModel();

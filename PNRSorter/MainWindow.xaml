@@ -23,14 +23,19 @@
         <Label Content="Group" HorizontalAlignment="Left" Margin="588,132,0,0" VerticalAlignment="Top"/>
         <TextBox HorizontalAlignment="Left" Height="23" Margin="636,166,0,0" TextWrapping="Wrap" Text="{Binding CurFam}" VerticalContentAlignment="Center" TextAlignment="Center" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
         <Label Content="{Binding ErrorMsg}" Foreground="IndianRed" FontStyle="Italic" HorizontalAlignment="Left" Height="28" Margin="0,391,0,0" VerticalAlignment="Top" Width="792"/>
-        <Label Content="Filters" HorizontalAlignment="Left" Margin="187,10,0,0" VerticalAlignment="Top"/>
-        <Label Content="Sales min" HorizontalAlignment="Left" Margin="8,37,0,0" VerticalAlignment="Top"/>
-        <TextBox Height="23" Text="{Binding MinSales, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Margin="73,41,0,0"/>
-        <Label Content="PNR" HorizontalAlignment="Left" Margin="195,37,0,0" VerticalAlignment="Top"/>
-        <TextBox Height="23" Text="{Binding PNRFilter, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Margin="246,41,0,0"/>
+        <Label Content="Filters" HorizontalAlignment="Left" Margin="187,20,0,0" VerticalAlignment="Top"/>
+        <Label Content="Sales min" HorizontalAlignment="Left" Margin="8,47,0,0" VerticalAlignment="Top"/>
+        <TextBox Height="23" Text="{Binding MinSales, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Margin="73,51,0,0"/>
+        <Label Content="PNR" HorizontalAlignment="Left" Margin="195,47,0,0" VerticalAlignment="Top"/>
+        <TextBox Height="23" Text="{Binding PNRFilter, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Margin="246,51,0,0"/>
         <Button Content="Reset filters" HorizontalAlignment="Left" Height="24" Margin="306,362,0,0" VerticalAlignment="Top" Width="87" Command="{Binding ResetCmd}"/>
         <Button Content="Select All" HorizontalAlignment="Left" Height="24" Margin="306,334,0,0" VerticalAlignment="Top" Width="87" Command="{Binding SelectAllCmd}"/>
-        <Button Content="Edit Groups and Families" HorizontalAlignment="Left" Height="24" Margin="360,200,0,0" VerticalAlignment="Top" Width="138" Command="{Binding EditCmd}"/>
+        <Button Content="Associer" HorizontalAlignment="Left" Height="24" Margin="428,200,0,0" VerticalAlignment="Top" Width="87" Command="{Binding LinkPNRCmd}"/>
+        <Button HorizontalAlignment="Left" Height="63" Margin="306,200,0,0" VerticalAlignment="Top" Width="100" Command="{Binding EditCmd}">
+            <Button.Content>
+                <TextBlock Text="Edit Groups and Families" TextAlignment="Center" TextWrapping="Wrap"/>
+            </Button.Content>
+        </Button>
         <ListBox Margin="26,101,491,33"
                  ItemsSource="{Binding ToBeSorted, Mode=TwoWay}"
                  SelectionMode="Multiple">
@@ -59,6 +64,15 @@
         <ComboBox ItemsSource="{Binding Families}" SelectedItem="{Binding SelectedFam}" HorizontalAlignment="Left" Margin="378,153,0,0" VerticalAlignment="Top" Width="120"/>
         <Label Content="Number of listed unsorted items:" HorizontalAlignment="Left" Margin="26,74,0,0" VerticalAlignment="Top"/>
         <Label Content="{Binding NbTBS, NotifyOnSourceUpdated=True}" HorizontalAlignment="Left" Margin="210,74,0,0" VerticalAlignment="Top"/>
+        <Menu HorizontalAlignment="Left" Height="20" VerticalAlignment="Top" Width="792" Background="WhiteSmoke">
+            <MenuItem Background="LightGray" Width="50">
+                <MenuItem.Header>
+                    <TextBlock Text="File" TextAlignment="Center" HorizontalAlignment="Center" Margin="-8,0,-20,0" Width="50"/>
+                </MenuItem.Header>
+                <MenuItem Header="Add PNR file"/>
+                <MenuItem Header="Load KE24" Command="{Binding LoadKE24Cmd}"/>
+            </MenuItem>
+        </Menu>
 
     </Grid>
 </Window>

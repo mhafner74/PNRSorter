@@ -1,4 +1,5 @@
 ﻿using Microsoft.Expression.Interactivity.Core;
+using Microsoft.Win32;
 using Newtonsoft.Json;
 using OfficeOpenXml;
 using OfficeOpenXml.ConditionalFormatting;
@@ -20,6 +21,8 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Xml.Linq;
+using System.Xml.Serialization;
 
 namespace PNRSorter.MVVM
 {
@@ -31,16 +34,13 @@ namespace PNRSorter.MVVM
         private FileInfo _configFile;
         private ObservableCollection<FileInfo> _fileList;
         private FileInfo _selectedFile;
+        private FileInfo _KE24File;
         #region PNR manipulation
         private ObservableCollection<MyPNR> _myPNR;
         private ObservableCollection<string> _groups;
         private ObservableCollection<string> _families;
         private ObservableCollection<Group> _hierarchy;
-        private List<MyPNR> _PMS;
-        private List<MyPNR> _SNC;
-        private List<MyPNR> _KE24;
-        private List<string> _PNRPMS;
-        private List<string> _PNRSNC;
+        private Dictionary<string, Dictionary<string, List<string>>> _PNRHierarchy;
         private List<string> _uniquePNR;
         private ObservableCollection<ListItems> _toBeSorted;
         private string _PNRSearch;
@@ -48,7 +48,6 @@ namespace PNRSorter.MVVM
         private int _salesCol;
         private int _productCol;
         private int _unitSoldCol;
-        private int _colNb;
         private Dictionary<string, int> _colInfo = new Dictionary<string, int>();
         private Dictionary<string, MyPNR> _PNRDic;
         private double _previousMinSales;
@@ -98,6 +97,11 @@ namespace PNRSorter.MVVM
             get => _selectedFile;
             set { _selectedFile = value; OnPropertyChanged("SelectedFile"); }
         }
+        public FileInfo KE24File
+        {
+            get => _KE24File;
+            set { _KE24File = value; OnPropertyChanged("KE24File"); }
+        }
         #endregion
         #region Backend prop
         public ObservableCollection<MyPNR> MyPNR
@@ -124,31 +128,12 @@ namespace PNRSorter.MVVM
                 OnPropertyChanged("Hierarchy");
             }
         }
-        public List<MyPNR> PMS
+        public Dictionary<string, Dictionary<string,List<string>>> PNRHierarchy
         {
-            get => _PMS;
-            set { _PMS = value; OnPropertyChanged("PMS"); }
+            get => _PNRHierarchy;
+            set { _PNRHierarchy = value; OnPropertyChanged("PNRHierarchy"); }
         }
-        public List<MyPNR> SNC
-        {
-            get => _SNC;
-            set { _SNC = value; OnPropertyChanged("SNC"); }
-        }
-        public List<MyPNR> KE24
-        {
-            get => _KE24;
-            set { _KE24 = value; OnPropertyChanged("KE24"); }
-        }
-        public List<string> PNRPMS
-        {
-            get => _PNRPMS;
-            set { _PNRPMS = value; OnPropertyChanged("PNRPMS"); }
-        }
-        public List<string> PNRSNC
-        {
-            get => _PNRSNC;
-            set { _PNRSNC = value; OnPropertyChanged("PNRSNC"); }
-        }
+
         public string PNRSearch
         {
             get => _PNRSearch;
@@ -293,15 +278,15 @@ namespace PNRSorter.MVVM
         public ICommand RenameItemCmd { get; set; }
         public ICommand AddGroupCmd { get; set; }
         public ICommand AddFamilyCmd { get; set; }
+        public ICommand LoadKE24Cmd { get; set; }
+        public ICommand LinkPNRCmd { get; set; }
         #endregion
 
         #region Initialise
-        public void Initialise()
+        private void InitialiseCommands()
         {
-            //Required for EEPLUS to be used
-            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
             //Commands
-            TestCommand = new RelayCommand(o => test(), o => {return SelectedTreeItem != null; });
+            TestCommand = new RelayCommand(o => test(), o => { return SelectedTreeItem != null; });
             DisplayDataCmd = new RelayCommand(o => DisplayData(), o => true);
             ResetCmd = new RelayCommand(o => Reset(), o => true);
             SelectAllCmd = new RelayCommand(o => SelectAll(), o => true);
@@ -310,52 +295,34 @@ namespace PNRSorter.MVVM
             RenameItemCmd = new RelayCommand(o => RenameItem(), o => { return SelectedTreeItem != null; });
             AddGroupCmd = new RelayCommand(o => AddGroup(), o => { return NewGroup != null; });
             AddFamilyCmd = new RelayCommand(o => AddFamily(), o => { return ((MyGroup != null) && (NewFamily != "")); });
-            //Config file location
+            LoadKE24Cmd = new RelayCommand(o => LoadKE24(), o => true);
+            LinkPNRCmd = new RelayCommand(o => LinkPNR(), o => { return (SelectedGroup != "") || (SelectedFam != ""); });
+        }
+
+        public void Initialise()
+        {
+            //Required for EEPLUS to be used
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+            //Commands
+            InitialiseCommands();
+            //Default config file location
             ConfigFile = new FileInfo(@"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\PNRSorter\configPNRSorter.txt");
             //Extracting data
-            FileInfo SNCFile = new FileInfo(@"C:\Users\msag\Desktop\PNRSorter\Families_S_C_v3.xlsx");
-            FileInfo PMSFile = new FileInfo(@"C:\Users\msag\Desktop\PNRSorter\Families_PMS_v3.xlsx");
-            FileInfo KE24File = new FileInfo(@"C:\Users\msag\Desktop\PNRSorter\KE24_Extract_Total.xlsx");
-            SavedFile sf = new SavedFile();
-            sf.FileList = new ObservableCollection<FileInfo>();
-            sf.FileList.Add(SNCFile);
-            sf.FileList.Add(PMSFile);
-            sf.FileList.Add(KE24File);
-            LoadConfig(sf);
-            string json = JsonConvert.SerializeObject(sf);
+            //FileInfo KE24File = new FileInfo(@"C:\Users\msag\Desktop\PNRSorter\KE24_Extract_Total.xlsx");
+            SavedFile config = LoadConfig();
+
             //List for the autocompletion
             PNRDic = new Dictionary<string, MyPNR>();
-            //List of families + groups
-            Groups = new ObservableCollection<string>() { "", "S&C", "PMS" };
-            //second group list used in the edit windows. Has to be different from "Groups" to allow the user not to save his modifications
-            GroupList = new ObservableCollection<string>() { "S&C", "PMS" };
-            GroupToFam = new Dictionary<string, List<string>>();
-            GroupToFam.Add("", new List<string>());
-            GroupToFam.Add("S&C", new List<string>());
-            GroupToFam.Add("PMS", new List<string>());
-            //List of already classified PNRs
-            PNRPMS = new List<string>();
-            PNRSNC = new List<string>();
-            SNC = ExtractHierarchy(SNCFile, "S&C");
-            PMS = ExtractHierarchy(PMSFile, "PMS");
+
+            //Extracting data from files
+            ExtractHierarchy(config);
+
+            //Variables for the treeview in Edit Window
             Hierarchy = new ObservableCollection<Group>();
             Families = new ObservableCollection<string>();
-            //Selecting the desired values
-            colInfo = new Dictionary<string, int>();
-            colInfo.Add("Product", -1);
-            colInfo.Add("Sales", -1);
-            colInfo.Add("Billing Quantity", -1);
-            FindColumn(KE24File, colInfo);
-            foreach (var key in colInfo.Keys)
-                Console.WriteLine("key: " + key + ", colNb: " + colInfo[key].ToString());
-            _productCol = colInfo["Product"];
-            _salesCol = colInfo["Sales"];
-            _unitSoldCol = colInfo["Billing Quantity"];
             ToBeSorted = new ObservableCollection<ListItems>();
             _toBeSortedIni = new ObservableCollection<ListItems>();
-            GenerateDB(KE24File);
-            _nbTBS = ToBeSorted.Count();
-            PNRList = new ObservableCollection<string>(PNRDic.Keys.ToList());
+
             //Isolating PNRs
             //UniquePNR = FindUnique(KE24);
             //ToBeSorted = new ObservableCollection<string>(FilterExistingPNR(PNRDic.Keys.ToList()));
@@ -372,7 +339,10 @@ namespace PNRSorter.MVVM
             //Win GUI intialisation
             //Verification procedures
             Pouet = "";
+
+            SaveConfig(config);
         }
+
         #endregion
 
         #region Constructor
@@ -416,7 +386,6 @@ namespace PNRSorter.MVVM
                 pnr.IsSelected = true;
         }
 
-
         private void UpdateCount()
         {
             NbTBS = ToBeSorted.Count();
@@ -429,7 +398,7 @@ namespace PNRSorter.MVVM
                 if(group != "")
                 {
                     ObservableCollection<Family> famCollection = new ObservableCollection<Family>();
-                    foreach (var fam in GroupToFam[group])
+                    foreach (var fam in PNRHierarchy[group].Keys)
                         famCollection.Add(new Family(fam));
                     Hierarchy.Add(new Group(group, famCollection));
                 }
@@ -449,14 +418,6 @@ namespace PNRSorter.MVVM
                         string ini = ModifySelection;
                         Hierarchy.Remove(group);
                         GroupList.Remove(ini);
-                        //for (int i = 0; i < GroupList.Count(); i++)
-                        //{
-                        //    if (GroupList[i] == ini)
-                        //    {
-                        //        GroupList.RemoveAt(i);
-                        //        break;
-                        //    }
-                        //}
                         break;
                     }
                 }
@@ -547,6 +508,87 @@ namespace PNRSorter.MVVM
             }
         }
 
+        private void LoadKE24()
+        {
+            OpenFileDialog ke24 = new OpenFileDialog();
+            ke24.DefaultExt = "xls, xlsx";
+            ke24.InitialDirectory = ConfigFile.DirectoryName;
+            ke24.ShowDialog();
+            GetKE24Data(new FileInfo(ke24.FileName));
+        }
+
+        private void LinkPNR()
+        {
+            if(SelectedGroup != "")
+            {
+                if(SelectedFam != "")
+                {
+                    List<string> _selectedPNR = new List<string>();
+                    List<string> _doublon = new List<string>();
+
+                    foreach(var pnr in ToBeSorted)
+                    {
+                        //On récupère les PNRs selectionnés et on verifie qu'ils ne soient pas déjà classé
+                        if (pnr.IsSelected)
+                        {
+                            _selectedPNR.Add(pnr.PNRName);
+                            //Are there PNR that were already sorted
+                            if (!ToBeSorted.Contains(pnr))
+                                _doublon.Add(pnr.PNRName);
+                        }
+
+                        if(_doublon.Count() != 0)
+                        {
+                            string _stringDoublon = "";
+                            foreach (string dbl in _doublon)
+                                _stringDoublon += dbl + " ";
+                            if(MessageBox.Show("The following PNRs have already been classified. Should they be moved to this new Group/Family ? \r This will remove their previous classification"," ", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            {
+                                foreach(var group in PNRHierarchy.Keys)
+                                {
+                                    foreach(var fam in PNRHierarchy[group].Keys)
+                                    {
+                                        foreach(var dbl in _doublon)
+                                        {
+                                            for(int i =0; i< PNRHierarchy[group][fam].Count(); i++)
+                                            {
+                                                if(PNRHierarchy[group][fam][i] == dbl)
+                                                {
+                                                    PNRHierarchy[group][fam].RemoveAt(i);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                return;
+                            }
+                        }
+                    }
+
+                    foreach (string pnr in _selectedPNR)
+                    {
+                        PNRHierarchy[SelectedGroup][SelectedFam].Add(pnr);
+                        for (int i = 0; i < ToBeSorted.Count(); i++)
+                        {
+                            if (ToBeSorted[i].PNRName == pnr)
+                                ToBeSorted.RemoveAt(i);
+                        }
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Please select a Family first");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please selected a Group first");
+            }
+        }
+
         #endregion
 
         public void test()
@@ -562,8 +604,9 @@ namespace PNRSorter.MVVM
 
         #region Private Methods
         #region Config File Mayhem
-        private void LoadConfig(SavedFile sf)
+        private SavedFile LoadConfig()
         {
+            SavedFile savedFile = new SavedFile();
             if (!File.Exists(ConfigFile.FullName))
             {
                 MessageBox.Show("No Config File Found, creating one: " + ConfigFile.FullName);
@@ -575,75 +618,148 @@ namespace PNRSorter.MVVM
                     }
                     catch
                     {
-                        MessageBox.Show("It is not looking greate my friend, something is going wrong. Check if you are connected to VM network. If yes, contact Jason Bourne and tell him \"\"");
+                        MessageBox.Show("It is not looking greate my friend, something is going wrong.\r Check if you are connected to VM network.\r If yes, contact Adrien Corne and tell him \"Coconut\"");
                     }
                 }
-                File.Create(ConfigFile.FullName);
-                using(StreamWriter sw = ConfigFile.AppendText())
-                {
-                    sw.WriteLine("PLEASE, I BEG YOU, DO NOT MODIFY THIS FILE BY YOURSELF");
-                }
+                //File.Create(ConfigFile.FullName);
+                //ConfigFile.Create();
+                savedFile = PopulateConfig();
             }
             else
             {
-                using(StreamReader sr = ConfigFile.OpenText())
+                var serialiser = new XmlSerializer(typeof(SavedFile));
+                using (var fs = new FileStream(ConfigFile.FullName,FileMode.Open))
                 {
-                    string line = sr.ReadLine();
-                    if (line.StartsWith("@"))
+                    try
                     {
-                        FileList.Add(new FileInfo(line));
+                        savedFile = (SavedFile)serialiser.Deserialize(fs);
+                    }
+                    catch
+                    {
+                        Console.WriteLine("THERE WAS AN ERROR !");
+                        PopulateConfig();
                     }
                 }
             }
+
+            //Group List
+            Groups = new ObservableCollection<string>() { "" };
+            //second group list used in the edit windows. Has to be different from "Groups" to allow the user not to save his modifications in the Edit Window. Does not include the initial ""
+            GroupList = new ObservableCollection<string>();
+            //Association Group Family PNR
+            PNRHierarchy = new Dictionary<string, Dictionary<string, List<string>>>();
+
+            //Populating each group based on the config file
+            foreach (GroupFile groupName in savedFile.GroupList)
+            {
+                Groups.Add(groupName.Name);
+                GroupList.Add(groupName.Name);
+                //GroupToFam.Add(groupName.Name, new List<string>());
+                ObservableCollection<string> newInstance = new ObservableCollection<string>();
+                PNRHierarchy.Add(groupName.Name, new Dictionary<string, List<string>>());
+            }
+
+            return savedFile;
+        }
+
+        public void SaveConfig(SavedFile sf)
+        {
+            if(sf != null)
+            {
+                var doc = new XDocument();
+                using (var writer = doc.CreateWriter())
+                {
+                    var serialiser = new XmlSerializer(typeof(SavedFile));
+                    serialiser.Serialize(writer, sf);
+                }
+                doc.Save(ConfigFile.FullName);
+            }
+        }
+
+        public SavedFile PopulateConfig()
+        {
+            SavedFile savedFile = new SavedFile();
+            MessageBox.Show("No valid configuration file has been found. Please select at leat on .xlsx sorting product families");
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.DefaultExt = "xls, xlsx";
+            ofd.InitialDirectory = ConfigFile.DirectoryName;
+            ofd.Multiselect = true;
+            ofd.ShowDialog();
+            foreach(var file in ofd.FileNames)
+            {
+                savedFile.GroupList.Add(new GroupFile() { Name = file.Split('\\').Last(), Path = file });
+            }
+            return savedFile;
+        }
+
+        public void GetKE24Data(FileInfo KE24File)
+        {
+            //Selecting desired value fields
+            colInfo = new Dictionary<string, int>();
+            colInfo.Add("Product", -1);
+            colInfo.Add("Sales", -1);
+            colInfo.Add("Billing Quantity", -1);
+
+            //Look for the column numbers in KE24
+            FindColumn(KE24File, colInfo);
+            _productCol = colInfo["Product"];
+            _salesCol = colInfo["Sales"];
+            _unitSoldCol = colInfo["Billing Quantity"];
+
+            //Synt. data from KE24 for each PNRs
+            GenerateDB(KE24File);
+            _nbTBS = ToBeSorted.Count();
+            PNRList = new ObservableCollection<string>(PNRDic.Keys.ToList());
         }
         #endregion
 
         #region Main window
-        private List<MyPNR> ExtractHierarchy(FileInfo file, string group)
+        //Create a dictionnary with the hierarchy Group -> Families -> PNRs
+        private void ExtractHierarchy(SavedFile sf)
         {
             List<MyPNR> ExtractHierarchy = new List<MyPNR>();
-            using (var package = new ExcelPackage(file))
+            foreach(var sfFile in sf.GroupList)
             {
-                ExcelWorksheet worksheet = package.Workbook.Worksheets.FirstOrDefault();
-                int rows = worksheet.Dimension.Rows;
-                int col = worksheet.Dimension.Columns;
-                for (int i = 1; i < col + 1; i++)
+                FileInfo file = new FileInfo(sfFile.Path);
+                using (var package = new ExcelPackage(file))
                 {
-                    for (int j = 2; j < rows + 1; j++)
+                    ExcelWorksheet worksheet = package.Workbook.Worksheets.FirstOrDefault();
+                    int rows = worksheet.Dimension.Rows;
+                    int col = worksheet.Dimension.Columns;
+                    for (int i = 1; i < col + 1; i++)
                     {
-                        MyPNR curPNR = new MyPNR();
-                        try
+                        for (int j = 2; j < rows + 1; j++)
                         {
-                            if (!string.IsNullOrEmpty(worksheet.Cells[j, i].Text))
+                            MyPNR curPNR = new MyPNR();
+                            try
                             {
-                                string PNR = worksheet.Cells[j, i].Value.ToString();
-                                if (!PNRDic.Keys.Contains(PNR))
+                                if (!string.IsNullOrEmpty(worksheet.Cells[j, i].Text))
                                 {
-                                    if (group == "S&C")
-                                        PNRSNC.Add(curPNR.PNR);
+                                    string PNR = worksheet.Cells[j, i].Value.ToString();
+                                    if (!PNRDic.Keys.Contains(PNR))
+                                    {
+                                        curPNR.Family = worksheet.Cells[1, i].Value.ToString();
+                                        if (!PNRHierarchy[sfFile.Name].ContainsKey(curPNR.Family))
+                                            PNRHierarchy[sfFile.Name].Add(curPNR.Family, new List<string>());
+                                        PNRHierarchy[sfFile.Name][curPNR.Family].Add(PNR);
+                                        curPNR.Group = sfFile.Name;
+                                        curPNR.PNR = worksheet.Cells[j, i].Value.ToString();
+                                        curPNR.Sales = 0;
+                                        curPNR.UnitSold = 0;
+                                        PNRDic.Add(PNR, curPNR);
+                                    }
                                     else
-                                        PNRPMS.Add(curPNR.PNR);
-                                    curPNR.Family = worksheet.Cells[1, i].Value.ToString();
-                                    if (!GroupToFam[group].Contains(curPNR.Family))
-                                        GroupToFam[group].Add(curPNR.Family);
-                                    curPNR.Group = group;
-                                    curPNR.PNR = worksheet.Cells[j, i].Value.ToString();
-                                    curPNR.Sales = 0;
-                                    curPNR.UnitSold = 0;
-                                    PNRDic.Add(PNR, curPNR);
+                                        Console.WriteLine("DOUBLON: " + PNR);
                                 }
-                                else
-                                    Console.WriteLine("DOUBLON: " + PNR);
                             }
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine(ex.ToString());
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine(ex.ToString());
+                            }
                         }
                     }
                 }
             }
-            return ExtractHierarchy;
         }
 
         private void GenerateDB(FileInfo file)
@@ -707,18 +823,6 @@ namespace PNRSorter.MVVM
             return uniquePNR;
         }
 
-        private List<string> FilterExistingPNR(List<string> uniquePNR)
-        {
-            List<string> toBeSorted = new List<string>();
-            foreach (var pnr in uniquePNR)
-            {
-                if (!(PNRPMS.Contains(pnr) || PNRSNC.Contains(pnr)))
-                    toBeSorted.Add(pnr);
-            }
-
-            return toBeSorted;
-        }
-
         private void FindColumn(FileInfo excel, Dictionary<string, int> name)
         {
             using (var package = new ExcelPackage(excel))
@@ -775,20 +879,6 @@ namespace PNRSorter.MVVM
         #endregion
 
         #region Research
-        private MyPNR PNRFetcher(FileInfo excel, string pnrNb)
-        {
-            using (var package = new ExcelPackage(excel))
-            {
-                ExcelWorksheet worksheet = package.Workbook.Worksheets.FirstOrDefault();
-                for (int j = 1; j < (_colNb + 1); j++)
-                {
-                    //if(worksheet.Cells[j, _productCol].Value.ToString() == pnrNb)
-                }
-            }
-            MyPNR pnr = new MyPNR();
-            return pnr;
-        }
-
         private void GetAssociatedFam()
         {
             {
@@ -797,15 +887,15 @@ namespace PNRSorter.MVVM
                     Families.Clear();
                     if (SelectedGroup == "")
                     {
-                        foreach (var group in Groups)
+                        foreach (var group in PNRHierarchy.Keys)
                         {
-                            foreach (var fam in GroupToFam[group])
+                            foreach (var fam in PNRHierarchy[group].Keys)
                                 Families.Add(fam);
                         }
                     }
                     else
                     {
-                        foreach (var fam in GroupToFam[SelectedGroup])
+                        foreach (var fam in PNRHierarchy[SelectedGroup].Keys)
                             Families.Add(fam);
                     }
                 }
@@ -818,9 +908,9 @@ namespace PNRSorter.MVVM
             {
                 if (SelectedFam != null)
                 {
-                    foreach (var group in Groups)
+                    foreach (var group in PNRHierarchy.Keys)
                     {
-                        if (GroupToFam[group].Contains(SelectedFam))
+                        if (PNRHierarchy[group].ContainsKey(SelectedFam))
                             SelectedGroup = group;
                     }
                 }

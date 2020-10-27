@@ -10,6 +10,21 @@ namespace PNRSorter.MVVM
 {
     public class SavedFile
     {
-        public ObservableCollection<FileInfo> FileList { get; set; }
+        public List<GroupFile> GroupList { get; set; }
+        public SavedFile()
+        {
+            GroupList = new List<GroupFile>();
+        }
+    }
+
+    public class GroupFile
+    {
+        public string Name { get; set; }
+        public string Path { get; set; }
+        public GroupFile()
+        {
+            Name = "";
+            Path = "";
+        }
     }
 }
