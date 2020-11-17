@@ -1,28 +1,16 @@
-﻿using Microsoft.Expression.Interactivity.Core;
-using Microsoft.Win32;
-using Newtonsoft.Json;
+﻿using Microsoft.Win32;
 using OfficeOpenXml;
-using OfficeOpenXml.ConditionalFormatting;
 using PNRSorter.Utility;
 using System;
-using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Data;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Net.Mime;
-using System.Runtime.Serialization;
-using System.Security;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 using System.Xml.Linq;
 using System.Xml.Serialization;
+using Microsoft.Office.Interop.Excel;
 
 namespace PNRSorter.MVVM
 {
@@ -54,6 +42,7 @@ namespace PNRSorter.MVVM
         private string _previousPNR;
         private ObservableCollection<ListItems> _toBeSortedIni;
         private Dictionary<string, List<string>> _groupToFam;
+        private SavedFile _config;
         #endregion
         #region GUI variables
         private double _curSales;
@@ -101,6 +90,11 @@ namespace PNRSorter.MVVM
         {
             get => _KE24File;
             set { _KE24File = value; OnPropertyChanged("KE24File"); }
+        }
+        public SavedFile Config
+        {
+            get => _config;
+            set { _config = value; OnPropertyChanged("Config"); }
         }
         #endregion
         #region Backend prop
@@ -270,6 +264,7 @@ namespace PNRSorter.MVVM
 
         #region Commands
         public ICommand TestCommand { get; set; }
+        public ICommand UpdateCmd { get; set; }
         public ICommand DisplayDataCmd { get; set; }
         public ICommand ResetCmd { get; set; }
         public ICommand SelectAllCmd { get; set; }
@@ -287,6 +282,7 @@ namespace PNRSorter.MVVM
         {
             //Commands
             TestCommand = new RelayCommand(o => test(), o => { return SelectedTreeItem != null; });
+            UpdateCmd = new RelayCommand(o => UpdateExcel(), o => true);
             DisplayDataCmd = new RelayCommand(o => DisplayData(), o => true);
             ResetCmd = new RelayCommand(o => Reset(), o => true);
             SelectAllCmd = new RelayCommand(o => SelectAll(), o => true);
@@ -309,13 +305,13 @@ namespace PNRSorter.MVVM
             ConfigFile = new FileInfo(@"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\PNRSorter\configPNRSorter.txt");
             //Extracting data
             //FileInfo KE24File = new FileInfo(@"C:\Users\msag\Desktop\PNRSorter\KE24_Extract_Total.xlsx");
-            SavedFile config = LoadConfig();
+            Config = LoadConfig();
 
             //List for the autocompletion
             PNRDic = new Dictionary<string, MyPNR>();
 
             //Extracting data from files
-            ExtractHierarchy(config);
+            ExtractHierarchy(Config);
 
             //Variables for the treeview in Edit Window
             Hierarchy = new ObservableCollection<Group>();
@@ -340,7 +336,7 @@ namespace PNRSorter.MVVM
             //Verification procedures
             Pouet = "";
 
-            SaveConfig(config);
+            SaveConfig(Config);
         }
 
         #endregion
@@ -570,7 +566,9 @@ namespace PNRSorter.MVVM
 
                     foreach (string pnr in _selectedPNR)
                     {
+                        //Add the PNR to dictionnary
                         PNRHierarchy[SelectedGroup][SelectedFam].Add(pnr);
+                        //Remove PNR from the displayed list
                         for (int i = 0; i < ToBeSorted.Count(); i++)
                         {
                             if (ToBeSorted[i].PNRName == pnr)
@@ -587,6 +585,55 @@ namespace PNRSorter.MVVM
             {
                 MessageBox.Show("Please selected a Group first");
             }
+        }
+
+        private void UpdateExcel()
+        {
+            foreach(var famFile in Config.GroupList)
+            {
+                //Excel Variable
+                Microsoft.Office.Interop.Excel.Application oXL;
+                Microsoft.Office.Interop.Excel._Workbook oWB;
+                Microsoft.Office.Interop.Excel._Worksheet oSheet;
+                Microsoft.Office.Interop.Excel.Range oRng;
+                object misvalue = System.Reflection.Missing.Value;
+                FileInfo file = new FileInfo(famFile.Path);
+                foreach (var group in Hierarchy)
+                {
+                    if (group.GroupName == famFile.Name)
+                    {
+                        try
+                        {
+                            //Start Excel
+                            oXL = new Microsoft.Office.Interop.Excel.Application();
+                            oXL.Visible = true;
+
+                            //Get proper sheet
+                            //oWB = (Microsoft.Office.Interop.Excel._Workbook)(oXL.Workbooks[0]);
+                            oWB = oXL.Workbooks.Open(famFile.Path);
+                            oSheet = (Microsoft.Office.Interop.Excel._Worksheet)oWB.ActiveSheet;
+
+                            //Create first column
+                            oSheet.Cells[1, 1] = "Family Name";
+                            oSheet.Cells[2, 1] = group.GroupName;
+                            //Create headers
+                            for (int i = 2; i < group.Families.Count() + 2; i++)
+                            {
+                                oSheet.Cells[1, i] = group.Families[i - 2].FamilyName;
+                            }
+
+                            //Fermeture du fichier
+                            oXL.Visible = false;
+                            oXL.UserControl = false;
+                            oWB.Save();
+                            oWB.Close();
+                            oXL.Quit();
+                        }
+                        catch { }
+                    }
+                }
+            }
+            return;
         }
 
         #endregion

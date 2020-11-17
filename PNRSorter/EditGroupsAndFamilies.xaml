@@ -29,7 +29,7 @@
                 </HierarchicalDataTemplate>
             </TreeView.ItemTemplate>
         </TreeView>
-        <Button Content="Save" HorizontalAlignment="Left" Height="21" Margin="53,382,0,0" VerticalAlignment="Top" Width="56" Command="{Binding TestCommand}" Grid.Column="1"/>
+        <Button Content="Save" HorizontalAlignment="Left" Height="21" Margin="53,382,0,0" VerticalAlignment="Top" Width="56" Command="{Binding UpdateCmd}" Grid.Column="1"/>
         <Label Content="Modify" Grid.Column="1" HorizontalAlignment="Center"  VerticalAlignment="Top"/>
         <TextBox Grid.Column="1" HorizontalAlignment="Center" Height="23" Margin="0,29" TextWrapping="Wrap" TextAlignment="Center" Text="{Binding ModifySelection}" VerticalAlignment="Top" MinWidth="100" Width="Auto"/>
         <Button Content="Rename" Grid.Column="1" HorizontalAlignment="Center" Margin="0,57,0,0" VerticalAlignment="Top" Width="80" Command="{Binding RenameItemCmd}"/>
