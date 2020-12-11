@@ -281,8 +281,8 @@ namespace PNRSorter.MVVM
         private void InitialiseCommands()
         {
             //Commands
-            TestCommand = new RelayCommand(o => test(), o => { return SelectedTreeItem != null; });
-            UpdateCmd = new RelayCommand(o => UpdateExcel(), o => true);
+            TestCommand = new RelayCommand(o => UpdateExcelPNR(), o => true);
+            UpdateCmd = new RelayCommand(o => UpdateExcelHeader(), o => true);
             DisplayDataCmd = new RelayCommand(o => DisplayData(), o => true);
             ResetCmd = new RelayCommand(o => Reset(), o => true);
             SelectAllCmd = new RelayCommand(o => SelectAll(), o => true);
@@ -311,11 +311,11 @@ namespace PNRSorter.MVVM
             PNRDic = new Dictionary<string, MyPNR>();
 
             //Extracting data from files
+            Hierarchy = new ObservableCollection<Group>();
+            Families = new ObservableCollection<string>();
             ExtractHierarchy(Config);
 
             //Variables for the treeview in Edit Window
-            Hierarchy = new ObservableCollection<Group>();
-            Families = new ObservableCollection<string>();
             ToBeSorted = new ObservableCollection<ListItems>();
             _toBeSortedIni = new ObservableCollection<ListItems>();
 
@@ -387,11 +387,11 @@ namespace PNRSorter.MVVM
             NbTBS = ToBeSorted.Count();
         }
 
-        private void Edit()
+        private void CreateHierarchy()
         {
             foreach (var group in Groups)
             {
-                if(group != "")
+                if (group != "")
                 {
                     ObservableCollection<Family> famCollection = new ObservableCollection<Family>();
                     foreach (var fam in PNRHierarchy[group].Keys)
@@ -399,6 +399,10 @@ namespace PNRSorter.MVVM
                     Hierarchy.Add(new Group(group, famCollection));
                 }
             }
+        }
+
+        private void Edit()
+        {
             EditGroupsAndFamilies editWin = new EditGroupsAndFamilies();
             editWin.Show();
         }
@@ -511,6 +515,7 @@ namespace PNRSorter.MVVM
             ke24.InitialDirectory = ConfigFile.DirectoryName;
             ke24.ShowDialog();
             GetKE24Data(new FileInfo(ke24.FileName));
+            UpdateCount();
         }
 
         private void LinkPNR()
@@ -587,7 +592,7 @@ namespace PNRSorter.MVVM
             }
         }
 
-        private void UpdateExcel()
+        private void UpdateExcelHeader()
         {
             foreach(var famFile in Config.GroupList)
             {
@@ -619,7 +624,59 @@ namespace PNRSorter.MVVM
                             //Create headers
                             for (int i = 2; i < group.Families.Count() + 2; i++)
                             {
-                                oSheet.Cells[1, i] = group.Families[i - 2].FamilyName;
+                                string curFam = group.Families[i - 2].FamilyName;
+                                oSheet.Cells[1, i] = curFam;
+                            }
+
+                            //Fermeture du fichier
+                            oXL.Visible = false;
+                            oXL.UserControl = false;
+                            oWB.Save();
+                            oWB.Close();
+                            oXL.Quit();
+                        }
+                        catch { }
+                    }
+                }
+            }
+            return;
+        }
+
+        private void UpdateExcelPNR()
+        {
+            foreach (var famFile in Config.GroupList)
+            {
+                //Excel Variable
+                Microsoft.Office.Interop.Excel.Application oXL;
+                Microsoft.Office.Interop.Excel._Workbook oWB;
+                Microsoft.Office.Interop.Excel._Worksheet oSheet;
+                Microsoft.Office.Interop.Excel.Range oRng;
+                object misvalue = System.Reflection.Missing.Value;
+                FileInfo file = new FileInfo(famFile.Path);
+                foreach (var group in Hierarchy)
+                {
+                    if (group.GroupName == famFile.Name)
+                    {
+                        try
+                        {
+                            //Start Excel
+                            oXL = new Microsoft.Office.Interop.Excel.Application();
+                            oXL.Visible = true;
+
+                            //Get proper sheet
+                            //oWB = (Microsoft.Office.Interop.Excel._Workbook)(oXL.Workbooks[0]);
+                            oWB = oXL.Workbooks.Open(famFile.Path);
+                            oSheet = (Microsoft.Office.Interop.Excel._Worksheet)oWB.ActiveSheet;
+
+                            //Create headers
+                            for (int i = 2; i < group.Families.Count() + 2; i++)
+                            {
+                                string curFam = group.Families[i - 2].FamilyName;
+                                //Fill with family PNRs
+                                for (int j = 2; j < PNRHierarchy[group.GroupName][curFam].Count() + 2; j++)
+                                {
+                                    oSheet.Cells[j, i] = PNRHierarchy[group.GroupName][curFam][j - 2];
+                                }
                             }
 
                             //Fermeture du fichier
@@ -764,7 +821,6 @@ namespace PNRSorter.MVVM
         //Create a dictionnary with the hierarchy Group -> Families -> PNRs
         private void ExtractHierarchy(SavedFile sf)
         {
-            List<MyPNR> ExtractHierarchy = new List<MyPNR>();
             foreach(var sfFile in sf.GroupList)
             {
                 FileInfo file = new FileInfo(sfFile.Path);
@@ -773,7 +829,8 @@ namespace PNRSorter.MVVM
                     ExcelWorksheet worksheet = package.Workbook.Worksheets.FirstOrDefault();
                     int rows = worksheet.Dimension.Rows;
                     int col = worksheet.Dimension.Columns;
-                    for (int i = 1; i < col + 1; i++)
+                    //i and j start at 2 to ignore the first roy (header) and first column (file name)
+                    for (int i = 2; i < col + 1; i++)
                     {
                         for (int j = 2; j < rows + 1; j++)
                         {
@@ -807,6 +864,7 @@ namespace PNRSorter.MVVM
                     }
                 }
             }
+            CreateHierarchy();
         }
 
         private void GenerateDB(FileInfo file)
