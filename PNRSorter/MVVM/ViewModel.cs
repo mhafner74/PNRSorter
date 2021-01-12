@@ -275,6 +275,7 @@ namespace PNRSorter.MVVM
         public ICommand AddFamilyCmd { get; set; }
         public ICommand LoadKE24Cmd { get; set; }
         public ICommand LinkPNRCmd { get; set; }
+        public ICommand UpdateKE24Cmd { get; set; }
         #endregion
 
         #region Initialise
@@ -282,6 +283,7 @@ namespace PNRSorter.MVVM
         {
             //Commands
             TestCommand = new RelayCommand(o => UpdateExcelPNR(), o => true);
+            UpdateKE24Cmd = new RelayCommand(o => UpdateKE24(), o => true);
             UpdateCmd = new RelayCommand(o => UpdateExcelHeader(), o => true);
             DisplayDataCmd = new RelayCommand(o => DisplayData(), o => true);
             ResetCmd = new RelayCommand(o => Reset(), o => true);
@@ -349,6 +351,17 @@ namespace PNRSorter.MVVM
         #endregion
 
         #region Command Methods
+        private void UpdateKE24()
+        {
+            KE24Update.UpdateKE24 prog = new KE24Update.UpdateKE24();
+            List<List<object>> newData = new List<List<object>>(prog.LoadNewData());
+            if (newData.Count == 0)
+                return;
+            prog.InsertData(newData);
+            Console.WriteLine("KE24 update successfully, press a key to leave");
+            Console.ReadKey();
+        }
+
         private void DisplayData()
         {
             try
@@ -882,9 +895,16 @@ namespace PNRSorter.MVVM
                         MyPNR curPNR = new MyPNR();
                         if (PNRDic.Keys.Contains(PNR))
                         {
-                            //To be uncommented if data is also wanted for PNRs that have already been classified 
-                            PNRDic[PNR].Sales += Convert.ToDouble(worksheet.Cells[j, _salesCol].Value);
-                            PNRDic[PNR].UnitSold += Convert.ToDouble(worksheet.Cells[j, _unitSoldCol].Value);
+                            // Try/catch required because of the line concerning "Tourmaline" which does not contain any data. Made a try catch in case other line like this one appear in the future (instead of
+                            // filtering on the PNR name that would only work in this case.
+                            try
+                            {
+                                //To be uncommented if data is also wanted for PNRs that have already been classified
+                                PNRDic[PNR].Sales += Convert.ToDouble(worksheet.Cells[j, _salesCol].Value);
+                                PNRDic[PNR].UnitSold += Convert.ToDouble(worksheet.Cells[j, _unitSoldCol].Value);
+
+                            }
+                            catch { }
                         }
                         else
                         {

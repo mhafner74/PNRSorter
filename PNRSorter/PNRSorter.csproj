@@ -115,6 +115,7 @@
     <Compile Include="EditGroupsAndFamilies.xaml.cs">
       <DependentUpon>EditGroupsAndFamilies.xaml</DependentUpon>
     </Compile>
+    <Compile Include="KE24Update\UpdateKE24.cs" />
     <Compile Include="MVVM\Family.cs" />
     <Compile Include="MVVM\Group.cs" />
     <Compile Include="MVVM\SavedFile.cs" />
@@ -141,6 +142,18 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="Styles\Btn.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Styles\MenuItem.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Styles\TextBlock.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MVVM\MyPNR.cs" />

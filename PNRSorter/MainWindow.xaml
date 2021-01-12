@@ -7,38 +7,33 @@
         xmlns:local="clr-namespace:PNRSorter"
         DataContext="{StaticResource VM}"
         mc:Ignorable="d"
-        Title="PNR Sorter" Height="450" Width="800">
+        Background="#2970AF"
+        WindowStyle="None"
+        AllowsTransparency="False"
+        Title="PNR Sorter" Height="395" Width="770" MinWidth="800" MinHeight="420">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Styles/Btn.xaml"/>
+                <ResourceDictionary Source="Styles/TextBlock.xaml"/>
+                <ResourceDictionary Source="Styles/MenuItem.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
     <Grid>
-        <Button Content="CLICK" HorizontalAlignment="Left" Height="44" Margin="632,347,0,0" VerticalAlignment="Top" Width="144" Command="{Binding TestCommand}"/>
-        <Button Content="Go" HorizontalAlignment="Left" Height="26" Margin="636,217,0,0" VerticalAlignment="Top" Width="107" Command="{Binding DisplayDataCmd}"/>
-        <Label Content="PNR number" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="553,33,0,0"/>
-        <TextBox Height="23" Text="{Binding PNRSearch, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" behaviors:AutoCompleteBehavior.AutoCompleteItemsSource="{Binding PNRList}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="130
-                 " Margin="636,37,0,0"/>
-        <Label Content="Sales" HorizontalAlignment="Left" Margin="594,70,0,0" VerticalAlignment="Top"/>
-        <TextBox HorizontalAlignment="Left" Height="23" Margin="636,74,0,0" TextWrapping="Wrap" Text="{Binding CurSales}" VerticalContentAlignment="Center" TextAlignment="Center" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
-        <Label Content="Quantity sold" HorizontalAlignment="Left" Margin="550,101,0,0" VerticalAlignment="Top"/>
-        <TextBox HorizontalAlignment="Left" Height="23" Margin="636,105,0,0" TextWrapping="Wrap" Text="{Binding CurQt}" VerticalContentAlignment="Center" TextAlignment="Center" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
-        <Label Content="Family" HorizontalAlignment="Left" Margin="587,163,0,0" VerticalAlignment="Top"/>
-        <TextBox HorizontalAlignment="Left" Height="23" Margin="636,135,0,0" TextWrapping="Wrap" Text="{Binding CurGroup}" VerticalContentAlignment="Center" TextAlignment="Center" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
-        <Label Content="Group" HorizontalAlignment="Left" Margin="588,132,0,0" VerticalAlignment="Top"/>
-        <TextBox HorizontalAlignment="Left" Height="23" Margin="636,166,0,0" TextWrapping="Wrap" Text="{Binding CurFam}" VerticalContentAlignment="Center" TextAlignment="Center" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
-        <Label Content="{Binding ErrorMsg}" Foreground="IndianRed" FontStyle="Italic" HorizontalAlignment="Left" Height="28" Margin="0,391,0,0" VerticalAlignment="Top" Width="792"/>
-        <Label Content="Filters" HorizontalAlignment="Left" Margin="187,20,0,0" VerticalAlignment="Top"/>
-        <Label Content="Sales min" HorizontalAlignment="Left" Margin="8,47,0,0" VerticalAlignment="Top"/>
-        <TextBox Height="23" Text="{Binding MinSales, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Margin="73,51,0,0"/>
-        <Label Content="PNR" HorizontalAlignment="Left" Margin="195,47,0,0" VerticalAlignment="Top"/>
-        <TextBox Height="23" Text="{Binding PNRFilter, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Margin="246,51,0,0"/>
-        <Button Content="Reset filters" HorizontalAlignment="Left" Height="24" Margin="306,362,0,0" VerticalAlignment="Top" Width="87" Command="{Binding ResetCmd}"/>
-        <Button Content="Select All" HorizontalAlignment="Left" Height="24" Margin="306,334,0,0" VerticalAlignment="Top" Width="87" Command="{Binding SelectAllCmd}"/>
-        <Button Content="Associer" HorizontalAlignment="Left" Height="24" Margin="428,200,0,0" VerticalAlignment="Top" Width="87" Command="{Binding LinkPNRCmd}"/>
-        <Button HorizontalAlignment="Left" Height="63" Margin="306,200,0,0" VerticalAlignment="Top" Width="100" Command="{Binding EditCmd}">
-            <Button.Content>
-                <TextBlock Text="Edit Groups and Families" TextAlignment="Center" TextWrapping="Wrap"/>
-            </Button.Content>
-        </Button>
-        <ListBox Margin="26,101,491,33"
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="481" />
+        </Grid.ColumnDefinitions>
+        <Rectangle HorizontalAlignment="Stretch" VerticalAlignment="Top" Fill="#284977" Height="20" Margin="0" MouseLeftButtonDown="Rectangle_MouseLeftButtonDown" Grid.ColumnSpan="2"/>
+        <Button Content="&#10006;" FontWeight="Bold" Foreground="White" HorizontalAlignment="Right" Margin="0,0,10,0" VerticalAlignment="Top" Width="20" Height="20" Background="{x:Null}" BorderThickness=" 0" Click="Button_Click" Grid.Column="1"/>
+        <Button Content="&#x2015;"  Foreground="White" HorizontalAlignment="Right" Margin="0,0,35,0" VerticalAlignment="Top" Width="20" Height="20" Background="{x:Null}" BorderThickness=" 0" Click="Button_Click_1" Grid.Column="1"/>
+        <Label Content="{Binding ErrorMsg}" Foreground="IndianRed" FontStyle="Italic" HorizontalAlignment="Left" Height="28" Margin="0,0,-6,0" VerticalAlignment="Bottom" Width="792" Grid.ColumnSpan="2"/>
+        <ListBox Margin="26,86,14,33"
                  ItemsSource="{Binding ToBeSorted, Mode=TwoWay}"
-                 SelectionMode="Multiple">
+                 SelectionMode="Multiple"
+                 Background="#e8f1f2"
+                 BorderThickness="0">
             <ListBox.Resources>
                 <Style TargetType="ListBoxItem">
                     <Setter Property="Template">
@@ -54,21 +49,106 @@
                 </Style>
             </ListBox.Resources>
         </ListBox>
-        <Label Content="Family" HorizontalAlignment="Left" Margin="317,149,0,0" VerticalAlignment="Top"/>
-        <Label Content="Group" HorizontalAlignment="Left" Margin="317,118,0,0" VerticalAlignment="Top"/>
-        <ComboBox ItemsSource="{Binding Groups}" SelectedItem="{Binding SelectedGroup}" HorizontalAlignment="Left" Margin="378,122,0,0" VerticalAlignment="Top" Width="120"/>
-        <ComboBox ItemsSource="{Binding Families}" SelectedItem="{Binding SelectedFam}" HorizontalAlignment="Left" Margin="378,153,0,0" VerticalAlignment="Top" Width="120"/>
-        <Label Content="Number of listed unsorted items:" HorizontalAlignment="Left" Margin="30,74,0,0" VerticalAlignment="Top"/>
-        <Label Content="{Binding NbTBS, NotifyOnSourceUpdated=True}" HorizontalAlignment="Left" Margin="214,74,0,0" VerticalAlignment="Top"/>
-        <Menu HorizontalAlignment="Left" Height="20" VerticalAlignment="Top" Width="792" Background="WhiteSmoke">
-            <MenuItem Background="LightGray" Width="50">
-                <MenuItem.Header>
-                    <TextBlock Text="File" TextAlignment="Center" HorizontalAlignment="Center" Margin="-8,0,-20,0" Width="50"/>
-                </MenuItem.Header>
-                <MenuItem Header="Add PNR file"/>
-                <MenuItem Header="Load KE24" Command="{Binding LoadKE24Cmd}"/>
+        <Label Foreground="AntiqueWhite" Content="Number of listed unsorted items:" HorizontalAlignment="Left" Margin="26,59,0,0" VerticalAlignment="Top"/>
+        <Label Foreground="AntiqueWhite" Content="{Binding NbTBS, NotifyOnSourceUpdated=True}" HorizontalAlignment="Left" Margin="213,59,0,0" VerticalAlignment="Top"/>
+        <Menu HorizontalAlignment="Left" Height="20" VerticalAlignment="Top" Width="50" Margin="0,20,0,0" >
+            <MenuItem Header="   _File" Template="{DynamicResource MenuItemControlTemplate1}" Width="50">
+                <MenuItem Header="Add PNR file" Template="{DynamicResource MenuItemControlTemplate2}"/>
+                <MenuItem Header="Load KE24" Command="{Binding LoadKE24Cmd}" Template="{DynamicResource MenuItemControlTemplate2}"/>
+                <MenuItem Header="Update KE24" Command="{Binding UpdateKE24Cmd}" Template="{DynamicResource MenuItemControlTemplate2}"/>
             </MenuItem>
         </Menu>
-
+        <DockPanel HorizontalAlignment="Stretch" LastChildFill="True" VerticalAlignment="Stretch" Margin="0,43,0,0"  Grid.Column="1">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <StackPanel Orientation="Vertical" Height="343">
+                    <Label Foreground="AntiqueWhite" Content="Filter" HorizontalAlignment="Right" Margin="15,0,15,-10" VerticalAlignment="Top" Grid.Column="1"/>
+                    <DockPanel HorizontalAlignment="Center" LastChildFill="True" VerticalAlignment="Center"  Width="235" Height="132">
+                        <Border BorderThickness="2" BorderBrush="AntiqueWhite" Background="#2d7bbf" CornerRadius="10" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="10">
+                            <StackPanel Width="220" Orientation="Vertical" Margin="10">
+                                <StackPanel Orientation="Horizontal">
+                                    <Label Foreground="AntiqueWhite" Content="Sales min" HorizontalAlignment="Left" VerticalAlignment="Top" Width="80"/>
+                                    <TextBox Background="WhiteSmoke" Height="23" Text="{Binding MinSales, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <Label Foreground="AntiqueWhite" Content="PNR" HorizontalAlignment="Left" VerticalAlignment="Top" Width="80"/>
+                                    <TextBox Background="WhiteSmoke" Height="23" Text="{Binding PNRFilter, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" />
+                                </StackPanel>
+                                <Separator Height="5" Background="{x:Null}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="Reset filters" HorizontalAlignment="Left" Height="24" VerticalAlignment="Top" Width="87" Style="{DynamicResource btnRound}" Command="{Binding ResetCmd}"/>
+                                    <Separator Width="10" Background="{x:Null}"/>
+                                    <Button Content="Select All" HorizontalAlignment="Left" Height="24" VerticalAlignment="Top" Width="87" Style="{DynamicResource btnRound}" Command="{Binding SelectAllCmd}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </DockPanel>
+                    <Label Foreground="AntiqueWhite" Content="Edit" HorizontalAlignment="Right" Margin="15,-10" VerticalAlignment="Top" Grid.Column="1"/>
+                    <DockPanel Height="197" Width="235" >
+                        <Border CornerRadius="10" Background="#2d7bbf" BorderThickness="2" BorderBrush="AntiqueWhite" HorizontalAlignment="Center" VerticalAlignment="Center" DockPanel.Dock="Bottom" Margin="10">
+                            <StackPanel DockPanel.Dock="Bottom" Width="220" Height="185" Background="Transparent" HorizontalAlignment="center" VerticalAlignment="center" >
+                                <Separator Height="20" Background="{x:Null}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Separator Width="20" Background="{x:Null}"/>
+                                    <Label Foreground="AntiqueWhite" Content="Group" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                                    <Separator Width="20" Background="{x:Null}"/>
+                                    <ComboBox ItemsSource="{Binding Groups}" SelectedItem="{Binding SelectedGroup}" HorizontalAlignment="Left"  VerticalAlignment="Top" Width="120"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <Separator Width="20" Background="{x:Null}"/>
+                                    <Label Foreground="AntiqueWhite" Content="Family" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                                    <Separator Width="19" Background="{x:Null}"/>
+                                    <ComboBox ItemsSource="{Binding Families}" SelectedItem="{Binding SelectedFam}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="120"/>
+                                </StackPanel>
+                                <Separator Height="20" Background="{x:Null}"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Button HorizontalAlignment="Left" Height="63" VerticalAlignment="Top" Width="100" Style="{DynamicResource btnRound}" Command="{Binding EditCmd}">
+                                        <TextBlock Text="Edit Groups and Families" TextAlignment="Center" TextWrapping="Wrap" TextBlock.FontWeight="Bold" TextBlock.Foreground="AntiqueWhite"/>
+                                    </Button>
+                                    <Separator Width="10" Background="{x:Null}"/>
+                                    <Button Content="Associer" HorizontalAlignment="Left" Height="24" VerticalAlignment="Bottom" Width="87" Style="{DynamicResource btnRound}" Command="{Binding LinkPNRCmd}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </DockPanel>
+                </StackPanel>
+                <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+                    <Label Foreground="AntiqueWhite" Content="Detail" HorizontalAlignment="Right" VerticalAlignment="Top"/>
+                    <DockPanel HorizontalAlignment="Center" LastChildFill="True" VerticalAlignment="Center" Height="233" Width="242">
+                        <Border BorderThickness="2" BorderBrush="AntiqueWhite" Background="#2d7bbf" CornerRadius="10" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <StackPanel Orientation="Vertical" Margin="10">
+                                <StackPanel Orientation="Horizontal">
+                                    <Label Foreground="AntiqueWhite" Content="PNR number" HorizontalAlignment="Left" VerticalAlignment="Top" Width="80"/>
+                                    <TextBox Background="WhiteSmoke" Height="23" Text="{Binding PNRSearch, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" behaviors:AutoCompleteBehavior.AutoCompleteItemsSource="{Binding PNRList}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="130" />
+                                </StackPanel>
+                                <Separator Height="5" Background="{x:Null}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Label Foreground="AntiqueWhite" Content="Sales" HorizontalAlignment="Left" VerticalAlignment="Top" Width="80"/>
+                                    <TextBox HorizontalAlignment="Left" Height="23" TextWrapping="Wrap" Text="{Binding CurSales}" VerticalContentAlignment="Center" TextAlignment="Center" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
+                                </StackPanel>
+                                <Separator Height="5" Background="{x:Null}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Label Foreground="AntiqueWhite" Content="Quantity sold" HorizontalAlignment="Left" VerticalAlignment="Top" Width="80"/>
+                                    <TextBox HorizontalAlignment="Left" Height="23" TextWrapping="Wrap" Text="{Binding CurQt}" VerticalContentAlignment="Center" TextAlignment="Center" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
+                                </StackPanel>
+                                <Separator Height="5" Background="{x:Null}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Label Foreground="AntiqueWhite" Content="Family" HorizontalAlignment="Left" VerticalAlignment="Top" Width="80"/>
+                                    <TextBox HorizontalAlignment="Left" Height="23" TextWrapping="Wrap" Text="{Binding CurGroup}" VerticalContentAlignment="Center" TextAlignment="Center" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
+                                </StackPanel>
+                                <Separator Height="5" Background="{x:Null}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Label Foreground="AntiqueWhite" Content="Group" HorizontalAlignment="Left" VerticalAlignment="Top" Width="80"/>
+                                    <TextBox HorizontalAlignment="Left" Height="23" TextWrapping="Wrap" Text="{Binding CurFam}" VerticalContentAlignment="Center" TextAlignment="Center" VerticalAlignment="Top" Width="120" IsReadOnly="True"/>
+                                </StackPanel>
+                                <Separator Height="5" Background="{x:Null}"/>
+                                <Button Content="Go" HorizontalAlignment="Right" Height="26" VerticalAlignment="Top" Width="107" Style="{DynamicResource btnRound}" Command="{Binding DisplayDataCmd}"/>
+                            </StackPanel>
+                        </Border>
+                    </DockPanel>
+                    <Separator Height="10" Background="Transparent"/>
+                    <Button Content="Save" HorizontalAlignment="Right" Height="26" VerticalAlignment="Top" Width="144" Style="{DynamicResource btnRound}" Command="{Binding TestCommand}" Grid.Column="1"/>
+                </StackPanel>
+            </StackPanel>
+        </DockPanel>
     </Grid>
 </Window>
