@@ -263,7 +263,7 @@ namespace PNRSorter.MVVM
         #endregion
 
         #region Commands
-        public ICommand TestCommand { get; set; }
+        public ICommand SaveCommand { get; set; }
         public ICommand UpdateCmd { get; set; }
         public ICommand DisplayDataCmd { get; set; }
         public ICommand ResetCmd { get; set; }
@@ -282,7 +282,7 @@ namespace PNRSorter.MVVM
         private void InitialiseCommands()
         {
             //Commands
-            TestCommand = new RelayCommand(o => UpdateExcelPNR(), o => true);
+            SaveCommand = new RelayCommand(o => UpdateExcelPNR(), o => true);
             UpdateKE24Cmd = new RelayCommand(o => UpdateKE24(), o => true);
             UpdateCmd = new RelayCommand(o => UpdateExcelHeader(), o => true);
             DisplayDataCmd = new RelayCommand(o => DisplayData(), o => true);
@@ -353,13 +353,17 @@ namespace PNRSorter.MVVM
         #region Command Methods
         private void UpdateKE24()
         {
+            Mouse.OverrideCursor = Cursors.Wait;
             KE24Update.UpdateKE24 prog = new KE24Update.UpdateKE24();
             List<List<object>> newData = new List<List<object>>(prog.LoadNewData());
             if (newData.Count == 0)
+            {
+                Mouse.OverrideCursor = Cursors.Arrow;
                 return;
+            }
             prog.InsertData(newData);
-            Console.WriteLine("KE24 update successfully, press a key to leave");
-            Console.ReadKey();
+            Mouse.OverrideCursor = Cursors.Arrow;
+            MessageBox.Show("KE24 update successfully !");
         }
 
         private void DisplayData()
@@ -527,8 +531,10 @@ namespace PNRSorter.MVVM
             ke24.DefaultExt = "xls, xlsx";
             ke24.InitialDirectory = ConfigFile.DirectoryName;
             ke24.ShowDialog();
+            Mouse.OverrideCursor = Cursors.Wait;
             GetKE24Data(new FileInfo(ke24.FileName));
             UpdateCount();
+            Mouse.OverrideCursor = Cursors.Arrow;
         }
 
         private void LinkPNR()
@@ -591,7 +597,16 @@ namespace PNRSorter.MVVM
                         {
                             if (ToBeSorted[i].PNRName == pnr)
                                 ToBeSorted.RemoveAt(i);
+                            PNRDic[pnr].Family = SelectedFam;
+                            PNRDic[pnr].Group = SelectedGroup;
                         }
+                        //Remove PNR for the list that will be displayed once filter change
+                        for (int i = 0; i < _toBeSortedIni.Count(); i++)
+                        {
+                            if (_toBeSortedIni[i].PNRName == pnr)
+                                _toBeSortedIni.RemoveAt(i);
+                        }
+
                     }
                 }
                 else
@@ -659,6 +674,7 @@ namespace PNRSorter.MVVM
         {
             foreach (var famFile in Config.GroupList)
             {
+                Mouse.OverrideCursor = Cursors.Wait;
                 //Excel Variable
                 Microsoft.Office.Interop.Excel.Application oXL;
                 Microsoft.Office.Interop.Excel._Workbook oWB;
@@ -703,6 +719,7 @@ namespace PNRSorter.MVVM
                     }
                 }
             }
+            Mouse.OverrideCursor = Cursors.Arrow;
             return;
         }
 

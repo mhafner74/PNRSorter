@@ -130,8 +130,8 @@ namespace PNRSorter.KE24Update
             int maxYear = 0;
             int maxMonth = 0;
             string maxString = "";
-            //need to duplique unique for the foreach loop. Cannot modify the list it is based on.
-            List<string> temp = new List<string>(unique);
+            ////need to duplique unique for the foreach loop. Cannot modify the list it is based on.
+            //List<string> temp = new List<string>(unique);
             List<int> years = new List<int>();
             foreach (string date in unique)
             {
@@ -139,21 +139,24 @@ namespace PNRSorter.KE24Update
                 int curYear = Convert.ToInt32(date.Split('.')[1].ToString());
                 if (curYear >= maxYear)
                 {
+                    if (curYear > maxYear)
+                        maxMonth = 0;
                     if (curMonth > maxMonth)
                     {
-                        if ((maxYear != 0) && (maxMonth != 0))
-                            temp.Remove(maxString);
+                        //if ((maxYear != 0) && (maxMonth != 0))
+                        //    temp.Remove(maxString);
                         maxMonth = curMonth;
                         maxString = date;
                     }
-                    else
-                        temp.Remove(date);
+                    //else
+                    //    temp.Remove(date);
                     maxYear = curYear;
                 }
-                else
-                    temp.Remove(date);
+                //else
+                //    temp.Remove(date);
             }
-            return temp[0];
+            return maxString;
+            //return temp[0];
         }
 
         //Get all line with the proper value
