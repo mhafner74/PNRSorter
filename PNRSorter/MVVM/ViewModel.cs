@@ -11,6 +11,7 @@ using System.Windows.Input;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 using Microsoft.Office.Interop.Excel;
+using System.Runtime.InteropServices;
 
 namespace PNRSorter.MVVM
 {
@@ -23,6 +24,9 @@ namespace PNRSorter.MVVM
         private ObservableCollection<FileInfo> _fileList;
         private FileInfo _selectedFile;
         private FileInfo _KE24File;
+        private ExcelTools _excelTools;
+        private string _archiveFolder = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\PNRSorter\Archives";
+        private EditGroupsAndFamilies _editWin;
         #region PNR manipulation
         private ObservableCollection<MyPNR> _myPNR;
         private ObservableCollection<string> _groups;
@@ -116,13 +120,13 @@ namespace PNRSorter.MVVM
         public ObservableCollection<Group> Hierarchy
         {
             get => _hierarchy;
-            set 
-            { 
-                _hierarchy = value;  
+            set
+            {
+                _hierarchy = value;
                 OnPropertyChanged("Hierarchy");
             }
         }
-        public Dictionary<string, Dictionary<string,List<string>>> PNRHierarchy
+        public Dictionary<string, Dictionary<string, List<string>>> PNRHierarchy
         {
             get => _PNRHierarchy;
             set { _PNRHierarchy = value; OnPropertyChanged("PNRHierarchy"); }
@@ -271,11 +275,12 @@ namespace PNRSorter.MVVM
         public ICommand EditCmd { get; set; }
         public ICommand DeleteItemCmd { get; set; }
         public ICommand RenameItemCmd { get; set; }
-        public ICommand AddGroupCmd { get; set; }
+        public ICommand AddGroupFileCmd { get; set; }
         public ICommand AddFamilyCmd { get; set; }
         public ICommand LoadKE24Cmd { get; set; }
         public ICommand LinkPNRCmd { get; set; }
         public ICommand UpdateKE24Cmd { get; set; }
+        public ICommand AddGroupCmd { get; set; }
         #endregion
 
         #region Initialise
@@ -292,6 +297,7 @@ namespace PNRSorter.MVVM
             DeleteItemCmd = new RelayCommand(o => DeleteItem(), o => { return SelectedTreeItem != null; });
             RenameItemCmd = new RelayCommand(o => RenameItem(), o => { return SelectedTreeItem != null; });
             AddGroupCmd = new RelayCommand(o => AddGroup(), o => { return NewGroup != null; });
+            AddGroupFileCmd = new RelayCommand(o => AddGroupFile(), o => true);
             AddFamilyCmd = new RelayCommand(o => AddFamily(), o => { return ((MyGroup != null) && (NewFamily != "")); });
             LoadKE24Cmd = new RelayCommand(o => LoadKE24(), o => true);
             LinkPNRCmd = new RelayCommand(o => LinkPNR(), o => { return (SelectedGroup != "") || (SelectedFam != ""); });
@@ -299,8 +305,11 @@ namespace PNRSorter.MVVM
 
         public void Initialise()
         {
+            Mouse.OverrideCursor = Cursors.Wait;
             //Required for EEPLUS to be used
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+            //Some excel tools
+            _excelTools = new ExcelTools();
             //Commands
             InitialiseCommands();
             //Default config file location
@@ -339,6 +348,7 @@ namespace PNRSorter.MVVM
             Pouet = "";
 
             SaveConfig(Config);
+            Mouse.OverrideCursor = Cursors.Arrow;
         }
 
         #endregion
@@ -420,8 +430,8 @@ namespace PNRSorter.MVVM
 
         private void Edit()
         {
-            EditGroupsAndFamilies editWin = new EditGroupsAndFamilies();
-            editWin.Show();
+            _editWin = new EditGroupsAndFamilies();
+            _editWin.Show();
         }
 
         public void DeleteItem()
@@ -466,9 +476,9 @@ namespace PNRSorter.MVVM
                         //we need to keep somewhere the previous word, otherwise it cannot find it in the list GroupList
                         string iniName = group.GroupName;
                         group.GroupName = ModifySelection;
-                        for(int i =0; i<GroupList.Count();i++)
+                        for (int i = 0; i < GroupList.Count(); i++)
                         {
-                            if(GroupList[i] == iniName)
+                            if (GroupList[i] == iniName)
                             {
                                 GroupList[i] = ModifySelection;
                                 break;
@@ -504,7 +514,7 @@ namespace PNRSorter.MVVM
         {
             foreach (var group in Hierarchy)
             {
-                if(group.GroupName == MyGroup)
+                if (group.GroupName == MyGroup)
                 {
                     group.Families.Add(new Family(NewFamily));
                     break;
@@ -514,9 +524,9 @@ namespace PNRSorter.MVVM
 
         private void SaveEdits()
         {
-            if(MessageBox.Show("Attention ma cacahuette, tu es sur le point de modifier la hierarchie des données, on continue ?", "tu crois vraiment que je n'ai rien d'autre à faire que d'écrire une caption ?", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            if (MessageBox.Show("Attention ma cacahuette, tu es sur le point de modifier la hierarchie des données, on continue ?", "tu crois vraiment que je n'ai rien d'autre à faire que d'écrire une caption ?", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
             {
-                foreach(Group group in Hierarchy)
+                foreach (Group group in Hierarchy)
                 {
                     if (!Groups.Contains(group.GroupName))
                     {
@@ -539,14 +549,14 @@ namespace PNRSorter.MVVM
 
         private void LinkPNR()
         {
-            if(SelectedGroup != "")
+            if (SelectedGroup != "")
             {
-                if(SelectedFam != "")
+                if (SelectedFam != "")
                 {
                     List<string> _selectedPNR = new List<string>();
                     List<string> _doublon = new List<string>();
 
-                    foreach(var pnr in ToBeSorted)
+                    foreach (var pnr in ToBeSorted)
                     {
                         //On récupère les PNRs selectionnés et on verifie qu'ils ne soient pas déjà classé
                         if (pnr.IsSelected)
@@ -557,22 +567,22 @@ namespace PNRSorter.MVVM
                                 _doublon.Add(pnr.PNRName);
                         }
 
-                        if(_doublon.Count() != 0)
+                        if (_doublon.Count() != 0)
                         {
                             string _stringDoublon = "";
                             foreach (string dbl in _doublon)
                                 _stringDoublon += dbl + " ";
-                            if(MessageBox.Show("The following PNRs have already been classified. Should they be moved to this new Group/Family ? \r This will remove their previous classification"," ", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            if (MessageBox.Show("The following PNRs have already been classified. Should they be moved to this new Group/Family ? \r This will remove their previous classification", " ", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
-                                foreach(var group in PNRHierarchy.Keys)
+                                foreach (var group in PNRHierarchy.Keys)
                                 {
-                                    foreach(var fam in PNRHierarchy[group].Keys)
+                                    foreach (var fam in PNRHierarchy[group].Keys)
                                     {
-                                        foreach(var dbl in _doublon)
+                                        foreach (var dbl in _doublon)
                                         {
-                                            for(int i =0; i< PNRHierarchy[group][fam].Count(); i++)
+                                            for (int i = 0; i < PNRHierarchy[group][fam].Count(); i++)
                                             {
-                                                if(PNRHierarchy[group][fam][i] == dbl)
+                                                if (PNRHierarchy[group][fam][i] == dbl)
                                                 {
                                                     PNRHierarchy[group][fam].RemoveAt(i);
                                                 }
@@ -620,56 +630,154 @@ namespace PNRSorter.MVVM
             }
         }
 
+        // whole thing is a mess, sorry to whoever is going through that function
         private void UpdateExcelHeader()
         {
-            foreach(var famFile in Config.GroupList)
+            // create a string list of the groups (see later in the function)
+            List<string> groupList = new List<string>();
+            // this double foreach loop is not the pretiest, should be changed to improve performances
+            foreach (var group in Hierarchy)
             {
-                //Excel Variable
-                Microsoft.Office.Interop.Excel.Application oXL;
-                Microsoft.Office.Interop.Excel._Workbook oWB;
-                Microsoft.Office.Interop.Excel._Worksheet oSheet;
-                Microsoft.Office.Interop.Excel.Range oRng;
-                object misvalue = System.Reflection.Missing.Value;
-                FileInfo file = new FileInfo(famFile.Path);
-                foreach (var group in Hierarchy)
+                groupList.Add(group.GroupName);
+                // goes through the existing excel sheet that were not delete
+                if (Config.StringGroupList().Contains(group.GroupName))
                 {
-                    if (group.GroupName == famFile.Name)
+                    foreach (var famFile in Config.GroupList)
                     {
-                        try
+                        if (famFile.Name == group.GroupName)
                         {
-                            //Start Excel
-                            oXL = new Microsoft.Office.Interop.Excel.Application();
-                            oXL.Visible = true;
-
-                            //Get proper sheet
-                            //oWB = (Microsoft.Office.Interop.Excel._Workbook)(oXL.Workbooks[0]);
-                            oWB = oXL.Workbooks.Open(famFile.Path);
-                            oSheet = (Microsoft.Office.Interop.Excel._Worksheet)oWB.ActiveSheet;
-
-                            //Create first column
-                            oSheet.Cells[1, 1] = "Family Name";
-                            oSheet.Cells[2, 1] = group.GroupName;
-                            //Create headers
-                            for (int i = 2; i < group.Families.Count() + 2; i++)
+                            //Excel Variable
+                            Microsoft.Office.Interop.Excel.Application oXL;
+                            Microsoft.Office.Interop.Excel._Workbook oWB;
+                            Microsoft.Office.Interop.Excel._Worksheet oSheet;
+                            FileInfo file = new FileInfo(famFile.Path);
+                            //check if file is already open
+                            if (_excelTools.IsFileOpen(famFile.Path))
+                                MessageBox.Show("The file " + famFile.Name + " located in " + famFile.Path + " is already open, please close it first for changes to be applied");
+                            else
                             {
-                                string curFam = group.Families[i - 2].FamilyName;
-                                oSheet.Cells[1, i] = curFam;
-                            }
+                                //so many problems with excel, using try catch to skip through
+                                try
+                                {
+                                    //Start Excel
+                                    oXL = new Microsoft.Office.Interop.Excel.Application();
+                                    oXL.Visible = true;
 
-                            //Fermeture du fichier
-                            oXL.Visible = false;
-                            oXL.UserControl = false;
-                            oWB.Save();
-                            oWB.Close();
-                            oXL.Quit();
+                                    //Get proper sheet
+                                    //oWB = (Microsoft.Office.Interop.Excel._Workbook)(oXL.Workbooks[0]);
+                                    oWB = oXL.Workbooks.Open(famFile.Path);
+                                    oSheet = (Microsoft.Office.Interop.Excel._Worksheet)oWB.ActiveSheet;
+
+                                    //Create first column
+                                    oSheet.Cells[1, 1] = "Family Name";
+                                    oSheet.Cells[2, 1] = group.GroupName;
+                                    //Create headers
+                                    for (int i = 2; i < group.Families.Count() + 2; i++)
+                                    {
+                                        string curFam = group.Families[i - 2].FamilyName;
+                                        oSheet.Cells[1, i] = curFam;
+                                    }
+
+                                    //Fermeture du fichier
+                                    oXL.Visible = false;
+                                    oXL.UserControl = false;
+                                    oWB.Save();
+                                    oWB.Close();
+                                    oXL.Quit();
+
+                                    // cleaning up xls objects
+                                    Marshal.ReleaseComObject(oSheet);
+                                    Marshal.ReleaseComObject(oWB);
+                                    Marshal.ReleaseComObject(oXL);
+                                }
+                                catch
+                                {
+                                    Console.WriteLine("POUET");
+                                }
+                            }
                         }
-                        catch { }
+                    }
+                }
+                // goes through the newly created groups
+                else
+                {
+                    // a new exel sheet has to be created and added to the configuration file
+                    // retrieve the folder where at least one of the group xls is stores
+                    FileInfo existingGroupFile = new FileInfo(Config.GroupList[0].Path);
+                    string _FOLDER = existingGroupFile.Directory.ToString();
+                    // creating variable for the the new Excel sheet
+                    FileInfo newExcel = new FileInfo(_FOLDER + "\\" + group.GroupName + ".xlsx");
+                    // Excel Variable
+                    Microsoft.Office.Interop.Excel.Application oXL;
+                    Microsoft.Office.Interop.Excel._Workbook oWB;
+                    Microsoft.Office.Interop.Excel._Worksheet oSheet;
+                    object misValue = System.Reflection.Missing.Value;
+                    //so many problems with excel, using try catch to skip through
+                    try
+                    {
+                        //Start Excel
+                        oXL = new Microsoft.Office.Interop.Excel.Application();
+                        oXL.Visible = true;
+
+                        // creating empty excel instance
+                        oWB = oXL.Workbooks.Add(misValue);
+                        oSheet = (Microsoft.Office.Interop.Excel._Worksheet)oWB.ActiveSheet;
+
+                        // Create first column
+                        oSheet.Cells[1, 1] = "Family Name";
+                        oSheet.Cells[2, 1] = group.GroupName;
+                        // Create headers
+                        for (int i = 2; i < group.Families.Count() + 2; i++)
+                        {
+                            string curFam = group.Families[i - 2].FamilyName;
+                            oSheet.Cells[1, i] = curFam;
+                        }
+
+                        // Fermeture du fichier
+                        oXL.Visible = false;
+                        oXL.UserControl = false;
+                        oWB.SaveAs(newExcel.FullName, XlFileFormat.xlWorkbookDefault, misValue, misValue, misValue, misValue, XlSaveAsAccessMode.xlExclusive, misValue, misValue, misValue, misValue, misValue);
+                        oWB.Close(true, misValue, misValue);
+                        oXL.Quit();
+
+                        // cleaning up xls objects
+                        Marshal.ReleaseComObject(oSheet);
+                        Marshal.ReleaseComObject(oWB);
+                        Marshal.ReleaseComObject(oXL);
+
+                        // add new file toconfig file
+                        Config.GroupList.Add(new GroupFile() { Name = group.GroupName, Path = newExcel.FullName });
+                    }
+                    catch { Console.WriteLine("POUET2"); }
+                }
+                // check for deleted groups
+            }
+            foreach (var famFile in Config.GroupList.ToList())
+            {
+                if (!groupList.Contains(famFile.Name))
+                {
+                    if (MessageBox.Show("The group: " + famFile.Name + " has been removed. Delete the associated excel file ?", "", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                    {
+                        if (!Directory.Exists(_archiveFolder))
+                            Directory.CreateDirectory(_archiveFolder);
+                        string newFile = _archiveFolder + "\\" + famFile.Name;
+                        if (File.Exists(newFile))
+                        {
+                            int index = 1;
+                            while (File.Exists(Path.GetFileNameWithoutExtension(newFile) + "_" + index + ".xlsx"))
+                                index++;
+                            newFile = Path.GetFileNameWithoutExtension(newFile) + "_" + index + ".xlsx";
+                        }
+                        File.Move(famFile.Path, newFile);
+                        Config.GroupList.Remove(famFile);
                     }
                 }
             }
-            return;
+            SaveConfig(Config);
+            _editWin.Close();
+            // Resetting the main window
+            Initialise();
         }
-
         private void UpdateExcelPNR()
         {
             foreach (var famFile in Config.GroupList)
@@ -679,7 +787,6 @@ namespace PNRSorter.MVVM
                 Microsoft.Office.Interop.Excel.Application oXL;
                 Microsoft.Office.Interop.Excel._Workbook oWB;
                 Microsoft.Office.Interop.Excel._Worksheet oSheet;
-                Microsoft.Office.Interop.Excel.Range oRng;
                 object misvalue = System.Reflection.Missing.Value;
                 FileInfo file = new FileInfo(famFile.Path);
                 foreach (var group in Hierarchy)
@@ -719,6 +826,7 @@ namespace PNRSorter.MVVM
                     }
                 }
             }
+
             Mouse.OverrideCursor = Cursors.Arrow;
             return;
         }
@@ -743,7 +851,7 @@ namespace PNRSorter.MVVM
             SavedFile savedFile = new SavedFile();
             if (!File.Exists(ConfigFile.FullName))
             {
-                MessageBox.Show("No Config File Found, creating one: " + ConfigFile.FullName);
+                MessageBox.Show("No Config File Found, creating one in: " + ConfigFile.FullName);
                 if (!ConfigFile.Directory.Exists)
                 {
                     try
@@ -762,17 +870,25 @@ namespace PNRSorter.MVVM
             else
             {
                 var serialiser = new XmlSerializer(typeof(SavedFile));
-                using (var fs = new FileStream(ConfigFile.FullName,FileMode.Open))
+                try
                 {
-                    try
+                    using (var fs = new FileStream(ConfigFile.FullName, FileMode.Open))
                     {
-                        savedFile = (SavedFile)serialiser.Deserialize(fs);
+                        try
+                        {
+                            savedFile = (SavedFile)serialiser.Deserialize(fs);
+                        }
+                        catch
+                        {
+                            Console.WriteLine("THERE WAS AN ERROR !");
+                            PopulateConfig();
+                        }
                     }
-                    catch
-                    {
-                        Console.WriteLine("THERE WAS AN ERROR !");
-                        PopulateConfig();
-                    }
+                }
+                catch
+                {
+                    MessageBox.Show("You've done goof, please restart the programme", "", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Environment.Exit(0);
                 }
             }
 
@@ -786,19 +902,23 @@ namespace PNRSorter.MVVM
             //Populating each group based on the config file
             foreach (GroupFile groupName in savedFile.GroupList)
             {
-                Groups.Add(groupName.Name);
-                GroupList.Add(groupName.Name);
-                //GroupToFam.Add(groupName.Name, new List<string>());
-                ObservableCollection<string> newInstance = new ObservableCollection<string>();
-                PNRHierarchy.Add(groupName.Name, new Dictionary<string, List<string>>());
+                if (File.Exists(groupName.Path))
+                {
+                    Groups.Add(groupName.Name);
+                    GroupList.Add(groupName.Name);
+                    //GroupToFam.Add(groupName.Name, new List<string>());
+                    ObservableCollection<string> newInstance = new ObservableCollection<string>();
+                    PNRHierarchy.Add(groupName.Name, new Dictionary<string, List<string>>());
+                }
             }
 
             return savedFile;
         }
 
+
         public void SaveConfig(SavedFile sf)
         {
-            if(sf != null)
+            if (sf != null)
             {
                 var doc = new XDocument();
                 using (var writer = doc.CreateWriter())
@@ -808,6 +928,21 @@ namespace PNRSorter.MVVM
                 }
                 doc.Save(ConfigFile.FullName);
             }
+        }
+        public void AddGroupFile()
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Title = "Pick a new group file";
+            ofd.DefaultExt = "xls, xlsx";
+            ofd.InitialDirectory = Config.GroupList[0].Path;
+            ofd.Multiselect = true;
+            ofd.ShowDialog();
+            foreach (var file in ofd.FileNames)
+            {
+                Config.GroupList.Add(new GroupFile() { Name = file.Split('\\').Last(), Path = file });
+            }
+            SaveConfig(Config);
+            Initialise();
         }
 
         public SavedFile PopulateConfig()
@@ -819,7 +954,7 @@ namespace PNRSorter.MVVM
             ofd.InitialDirectory = ConfigFile.DirectoryName;
             ofd.Multiselect = true;
             ofd.ShowDialog();
-            foreach(var file in ofd.FileNames)
+            foreach (var file in ofd.FileNames)
             {
                 savedFile.GroupList.Add(new GroupFile() { Name = file.Split('\\').Last(), Path = file });
             }
@@ -851,44 +986,54 @@ namespace PNRSorter.MVVM
         //Create a dictionnary with the hierarchy Group -> Families -> PNRs
         private void ExtractHierarchy(SavedFile sf)
         {
-            foreach(var sfFile in sf.GroupList)
+            foreach (var sfFile in sf.GroupList)
             {
                 FileInfo file = new FileInfo(sfFile.Path);
-                using (var package = new ExcelPackage(file))
+                if (File.Exists(file.FullName))
                 {
-                    ExcelWorksheet worksheet = package.Workbook.Worksheets.FirstOrDefault();
-                    int rows = worksheet.Dimension.Rows;
-                    int col = worksheet.Dimension.Columns;
-                    //i and j start at 2 to ignore the first roy (header) and first column (file name)
-                    for (int i = 2; i < col + 1; i++)
+                    using (var package = new ExcelPackage(file))
                     {
-                        for (int j = 2; j < rows + 1; j++)
+                        ExcelWorksheet worksheet = package.Workbook.Worksheets.FirstOrDefault();
+                        int rows = worksheet.Dimension.Rows;
+                        int col = worksheet.Dimension.Columns;
+                        //i and j start at 2 to ignore the first row (header) and first column (file name)
+                        for (int i = 2; i < col + 1; i++)
                         {
-                            MyPNR curPNR = new MyPNR();
-                            try
+                            for (int j = 2; j < rows + 1; j++)
                             {
-                                if (!string.IsNullOrEmpty(worksheet.Cells[j, i].Text))
+                                MyPNR curPNR = new MyPNR();
+                                try
                                 {
-                                    string PNR = worksheet.Cells[j, i].Value.ToString();
-                                    if (!PNRDic.Keys.Contains(PNR))
+                                    if (!string.IsNullOrEmpty(worksheet.Cells[j, i].Text))
+                                    {
+                                        string PNR = worksheet.Cells[j, i].Value.ToString();
+                                        if (!PNRDic.Keys.Contains(PNR))
+                                        {
+                                            curPNR.Family = worksheet.Cells[1, i].Value.ToString();
+                                            if (!PNRHierarchy[sfFile.Name].ContainsKey(curPNR.Family))
+                                                PNRHierarchy[sfFile.Name].Add(curPNR.Family, new List<string>());
+                                            PNRHierarchy[sfFile.Name][curPNR.Family].Add(PNR);
+                                            curPNR.Group = sfFile.Name;
+                                            curPNR.PNR = worksheet.Cells[j, i].Value.ToString();
+                                            curPNR.Sales = 0;
+                                            curPNR.UnitSold = 0;
+                                            PNRDic.Add(PNR, curPNR);
+                                        }
+                                        else
+                                            Console.WriteLine("DOUBLON: " + PNR);
+                                    }
+                                    //case there is just a family name but no PNR added
+                                    else if (!string.IsNullOrEmpty(worksheet.Cells[1, i].Text))
                                     {
                                         curPNR.Family = worksheet.Cells[1, i].Value.ToString();
                                         if (!PNRHierarchy[sfFile.Name].ContainsKey(curPNR.Family))
                                             PNRHierarchy[sfFile.Name].Add(curPNR.Family, new List<string>());
-                                        PNRHierarchy[sfFile.Name][curPNR.Family].Add(PNR);
-                                        curPNR.Group = sfFile.Name;
-                                        curPNR.PNR = worksheet.Cells[j, i].Value.ToString();
-                                        curPNR.Sales = 0;
-                                        curPNR.UnitSold = 0;
-                                        PNRDic.Add(PNR, curPNR);
                                     }
-                                    else
-                                        Console.WriteLine("DOUBLON: " + PNR);
                                 }
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine(ex.ToString());
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine(ex.ToString());
+                                }
                             }
                         }
                     }

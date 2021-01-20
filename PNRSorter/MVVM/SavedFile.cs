@@ -11,6 +11,16 @@ namespace PNRSorter.MVVM
     public class SavedFile
     {
         public List<GroupFile> GroupList { get; set; }
+        public List<string> StringGroupList()
+        {
+            List<string> stringGroupList = new List<string>(); 
+            foreach (var group in GroupList)
+            {
+                stringGroupList.Add(group.Name);
+            }
+
+            return stringGroupList;
+        }
         public SavedFile()
         {
             GroupList = new List<GroupFile>();
