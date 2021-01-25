@@ -57,7 +57,7 @@ namespace PNRSorter.KE24Update
                 FormatColumns(worksheet);
                 int nbRows = worksheet.Dimension.Rows;
                 Console.Write("\n Writing ...  ");
-                for (int i = 1; i < data.Count; i++)
+                for (int i = 1; i < data.Count + 1; i++)
                 {
                     //always the same number of items in data[x]
                     for (int j = 0; j < data[0].Count; j++)
@@ -72,6 +72,7 @@ namespace PNRSorter.KE24Update
             }
 
             //Moving the file out of the repertory to a backup directory
+            string oldFile = _FOLDER + "\\" + Directory.GetFiles(_FOLDER)[0].Split('\\').Last();
             string newFile = _BACKUP + "\\" + Directory.GetFiles(_FOLDER)[0].Split('\\').Last();
             if (File.Exists(newFile))
             {
@@ -80,7 +81,7 @@ namespace PNRSorter.KE24Update
                     index++;
                 newFile = _BACKUP + "\\" + Path.GetFileNameWithoutExtension(newFile) + "_" + index + ".xlsx";
             }
-            File.Move(Directory.GetFiles(_FOLDER)[0], newFile);
+            File.Move(oldFile, newFile);
         }
 
         // return the col id for a given col name. Returns -1 if nothing was found

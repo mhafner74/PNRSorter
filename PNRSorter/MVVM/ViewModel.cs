@@ -542,8 +542,11 @@ namespace PNRSorter.MVVM
             ke24.InitialDirectory = ConfigFile.DirectoryName;
             ke24.ShowDialog();
             Mouse.OverrideCursor = Cursors.Wait;
-            GetKE24Data(new FileInfo(ke24.FileName));
-            UpdateCount();
+            if (File.Exists(ke24.FileName)) 
+            {
+                GetKE24Data(new FileInfo(ke24.FileName));
+                UpdateCount();
+            }
             Mouse.OverrideCursor = Cursors.Arrow;
         }
 
@@ -934,7 +937,7 @@ namespace PNRSorter.MVVM
             OpenFileDialog ofd = new OpenFileDialog();
             ofd.Title = "Pick a new group file";
             ofd.DefaultExt = "xls, xlsx";
-            ofd.InitialDirectory = Config.GroupList[0].Path;
+            ofd.InitialDirectory = ConfigFile.DirectoryName;
             ofd.Multiselect = true;
             ofd.ShowDialog();
             foreach (var file in ofd.FileNames)
