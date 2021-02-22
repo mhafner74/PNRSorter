@@ -303,6 +303,7 @@ namespace PNRSorter.MVVM
             LinkPNRCmd = new RelayCommand(o => LinkPNR(), o => { return (SelectedGroup != "") || (SelectedFam != ""); });
         }
 
+
         public void Initialise()
         {
             Mouse.OverrideCursor = Cursors.Wait;
@@ -636,6 +637,7 @@ namespace PNRSorter.MVVM
         // whole thing is a mess, sorry to whoever is going through that function
         private void UpdateExcelHeader()
         {
+            Mouse.OverrideCursor = Cursors.Wait;
             // create a string list of the groups (see later in the function)
             List<string> groupList = new List<string>();
             // this double foreach loop is not the pretiest, should be changed to improve performances
@@ -664,7 +666,7 @@ namespace PNRSorter.MVVM
                                 {
                                     //Start Excel
                                     oXL = new Microsoft.Office.Interop.Excel.Application();
-                                    oXL.Visible = true;
+                                    oXL.Visible = false;
 
                                     //Get proper sheet
                                     //oWB = (Microsoft.Office.Interop.Excel._Workbook)(oXL.Workbooks[0]);
@@ -720,7 +722,7 @@ namespace PNRSorter.MVVM
                     {
                         //Start Excel
                         oXL = new Microsoft.Office.Interop.Excel.Application();
-                        oXL.Visible = true;
+                        oXL.Visible = false;
 
                         // creating empty excel instance
                         oWB = oXL.Workbooks.Add(misValue);
@@ -780,9 +782,11 @@ namespace PNRSorter.MVVM
             _editWin.Close();
             // Resetting the main window
             Initialise();
+            Mouse.OverrideCursor = Cursors.Arrow;
         }
         private void UpdateExcelPNR()
         {
+
             foreach (var famFile in Config.GroupList)
             {
                 Mouse.OverrideCursor = Cursors.Wait;
@@ -800,7 +804,7 @@ namespace PNRSorter.MVVM
                         {
                             //Start Excel
                             oXL = new Microsoft.Office.Interop.Excel.Application();
-                            oXL.Visible = true;
+                            oXL.Visible = false;
 
                             //Get proper sheet
                             //oWB = (Microsoft.Office.Interop.Excel._Workbook)(oXL.Workbooks[0]);

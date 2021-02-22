@@ -35,7 +35,7 @@
             <Button Style="{StaticResource RestoreButtonStyle}" Background="#284977" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top" Click="Button_Click_2"/>
             <Button Style="{StaticResource CloseButtonStyle}" Foreground="White" HorizontalAlignment="Right" VerticalAlignment="Top" Width="20" Height="20" Background="{x:Null}" BorderThickness=" 0" Click="Button_Click" Grid.Column="1"/>
         </StackPanel>
-        <Label Content="{Binding ErrorMsg}" Foreground="IndianRed" FontStyle="Italic" HorizontalAlignment="Left" Height="28" Margin="0,0,-6,0" VerticalAlignment="Bottom" Width="792" Grid.ColumnSpan="2"/>
+        <Label Foreground="IndianRed" FontStyle="Italic" HorizontalAlignment="Left" Height="28" Margin="0,0,-6,0" VerticalAlignment="Bottom" Width="792" Grid.ColumnSpan="2"/>
         <ListBox Margin="26,86,14,33"
                  ItemsSource="{Binding ToBeSorted, Mode=TwoWay}"
                  SelectionMode="Multiple"
@@ -112,7 +112,7 @@
                                         <TextBlock Text="Edit Groups and Families" TextAlignment="Center" TextWrapping="Wrap" TextBlock.FontWeight="Bold" TextBlock.Foreground="AntiqueWhite"/>
                                     </Button>
                                     <Separator Width="10" Background="{x:Null}"/>
-                                    <Button Content="Associer" HorizontalAlignment="Left" Height="24" VerticalAlignment="Bottom" Width="87" Style="{DynamicResource btnRound}" Command="{Binding LinkPNRCmd}"/>
+                                    <Button Content="Associate" HorizontalAlignment="Left" Height="24" VerticalAlignment="Bottom" Width="87" Style="{DynamicResource btnRound}" Command="{Binding LinkPNRCmd}"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -153,7 +153,7 @@
                         </Border>
                     </DockPanel>
                     <Separator Height="10" Background="Transparent"/>
-                    <Button Content="Save" HorizontalAlignment="Right" Height="26" VerticalAlignment="Top" Width="144" Style="{DynamicResource btnRound}" Command="{Binding SaveCommand}" Grid.Column="1"/>
+                    <Button Content="Save" HorizontalAlignment="Right" Height="26" VerticalAlignment="Top" Width="144" Style="{DynamicResource btnRound}" Command="{Binding SaveCommand}"/>
                 </StackPanel>
             </StackPanel>
         </DockPanel>
