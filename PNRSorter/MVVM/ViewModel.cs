@@ -1045,55 +1045,62 @@ namespace PNRSorter.MVVM
         {
             foreach (var sfFile in sf.GroupList)
             {
-                FileInfo file = new FileInfo(sfFile.Path);
-                if (File.Exists(file.FullName))
+                try
                 {
-                    using (var package = new ExcelPackage(file))
+                    FileInfo file = new FileInfo(sfFile.Path);
+                    if (File.Exists(file.FullName))
                     {
-                        ExcelWorksheet worksheet = package.Workbook.Worksheets.FirstOrDefault();
-                        int rows = worksheet.Dimension.Rows;
-                        int col = worksheet.Dimension.Columns;
-                        //i and j start at 2 to ignore the first row (header) and first column (file name)
-                        for (int i = 2; i < col + 1; i++)
+                        using (var package = new ExcelPackage(file))
                         {
-                            for (int j = 2; j < rows + 1; j++)
+                            ExcelWorksheet worksheet = package.Workbook.Worksheets.FirstOrDefault();
+                            int rows = worksheet.Dimension.Rows;
+                            int col = worksheet.Dimension.Columns;
+                            //i and j start at 2 to ignore the first row (header) and first column (file name)
+                            for (int i = 2; i < col + 1; i++)
                             {
-                                MyPNR curPNR = new MyPNR();
-                                try
+                                for (int j = 2; j < rows + 1; j++)
                                 {
-                                    if (!string.IsNullOrEmpty(worksheet.Cells[j, i].Text))
+                                    MyPNR curPNR = new MyPNR();
+                                    try
                                     {
-                                        string PNR = worksheet.Cells[j, i].Value.ToString();
-                                        if (!PNRDic.Keys.Contains(PNR))
+                                        if (!string.IsNullOrEmpty(worksheet.Cells[j, i].Text))
+                                        {
+                                            string PNR = worksheet.Cells[j, i].Value.ToString();
+                                            if (!PNRDic.Keys.Contains(PNR))
+                                            {
+                                                curPNR.Family = worksheet.Cells[1, i].Value.ToString();
+                                                if (!PNRHierarchy[sfFile.Name].ContainsKey(curPNR.Family))
+                                                    PNRHierarchy[sfFile.Name].Add(curPNR.Family, new List<string>());
+                                                PNRHierarchy[sfFile.Name][curPNR.Family].Add(PNR);
+                                                curPNR.Group = sfFile.Name;
+                                                curPNR.PNR = worksheet.Cells[j, i].Value.ToString();
+                                                curPNR.Sales = 0;
+                                                curPNR.UnitSold = 0;
+                                                PNRDic.Add(PNR, curPNR);
+                                            }
+                                            else
+                                                Console.WriteLine("DOUBLON: " + PNR);
+                                        }
+                                        //case there is just a family name but no PNR added
+                                        else if (!string.IsNullOrEmpty(worksheet.Cells[1, i].Text))
                                         {
                                             curPNR.Family = worksheet.Cells[1, i].Value.ToString();
                                             if (!PNRHierarchy[sfFile.Name].ContainsKey(curPNR.Family))
                                                 PNRHierarchy[sfFile.Name].Add(curPNR.Family, new List<string>());
-                                            PNRHierarchy[sfFile.Name][curPNR.Family].Add(PNR);
-                                            curPNR.Group = sfFile.Name;
-                                            curPNR.PNR = worksheet.Cells[j, i].Value.ToString();
-                                            curPNR.Sales = 0;
-                                            curPNR.UnitSold = 0;
-                                            PNRDic.Add(PNR, curPNR);
                                         }
-                                        else
-                                            Console.WriteLine("DOUBLON: " + PNR);
                                     }
-                                    //case there is just a family name but no PNR added
-                                    else if (!string.IsNullOrEmpty(worksheet.Cells[1, i].Text))
+                                    catch (Exception ex)
                                     {
-                                        curPNR.Family = worksheet.Cells[1, i].Value.ToString();
-                                        if (!PNRHierarchy[sfFile.Name].ContainsKey(curPNR.Family))
-                                            PNRHierarchy[sfFile.Name].Add(curPNR.Family, new List<string>());
+                                        Console.WriteLine(ex.ToString());
                                     }
-                                }
-                                catch (Exception ex)
-                                {
-                                    Console.WriteLine(ex.ToString());
                                 }
                             }
                         }
                     }
+                }
+                catch(Exception e)
+                {
+                    MessageBox.Show("Problème avec le fichier: " + sfFile.Path + "/n" + e.ToString());
                 }
             }
             CreateHierarchy();
