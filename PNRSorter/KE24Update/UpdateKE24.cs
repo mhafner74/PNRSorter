@@ -17,12 +17,12 @@ namespace PNRSorter.KE24Update
 {
     public class UpdateKE24:VMBase
     {
-        //private string _FOLDER = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\NewKE24";
-        //private string _KE24_EXTRACT_TOTAL = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\Data\KE24_Extract_Total.xlsx";
-        //private string _BACKUP = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\Archives\BackUpKE24";
-        private string _FOLDER = @"C:\Users\msagnard\Desktop\Fribourg\NewKE24";
-        private string _KE24_EXTRACT_TOTAL = @"C:\Users\msagnard\Desktop\Fribourg\Data\KE24_Extract_Total.xlsx";
-        private string _BACKUP = @"C:\Users\msagnard\Desktop\Fribourg\BackUpKE24";
+        private string _FOLDER = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\NewKE24";
+        private string _KE24_EXTRACT_TOTAL = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\Data\KE24_Extract_Total.xlsx";
+        private string _BACKUP = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\Archives\BackUpKE24";
+        //private string _FOLDER = @"C:\Users\msagnard\Desktop\Fribourg\NewKE24";
+        //private string _KE24_EXTRACT_TOTAL = @"C:\Users\msagnard\Desktop\Fribourg\Data\KE24_Extract_Total.xlsx";
+        //private string _BACKUP = @"C:\Users\msagnard\Desktop\Fribourg\BackUpKE24";
         private List<string> wantedCol = new List<string>() { "Product", "Period", "Revenue", "Discount", "Direct material costs", "Direct Resource", "Direct Overhead", "Billing Quantity", "COGS", "Sales", "Gross Profit" };
         private double _COGS;
         private double _revenue;
