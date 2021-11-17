@@ -25,8 +25,14 @@ namespace PNRSorter.MVVM
         private FileInfo _selectedFile;
         private FileInfo _KE24File;
         private ExcelTools _excelTools;
-        private string _archiveFolder = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\PNRSorter\Archives";
+        //private string _archiveFolder = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\PNRSorter\Archives";
+        private string _archiveFolder = @"C:\Users\msagnard\Desktop\Fribourg\Archives";
         private EditGroupsAndFamilies _editWin;
+        #region UpdateKE24
+        private Multipliers _multipliers;
+        private double _COGS;
+        private double _revenue;
+        #endregion
         #region PNR manipulation
         private ObservableCollection<MyPNR> _myPNR;
         private ObservableCollection<string> _groups;
@@ -257,6 +263,23 @@ namespace PNRSorter.MVVM
             set { _myGroup = value; OnPropertyChanged("MyGroup"); }
         }
         #endregion
+        #region UpdateKE24
+        public double COGS
+        {
+            get => _COGS;
+            set { _COGS = value; OnPropertyChanged("COGS"); }
+        }
+        public double Revenue
+        {
+            get => _revenue;
+            set { _revenue = value; OnPropertyChanged("Revenue"); }
+        }
+        public Multipliers Multipliers
+        {
+            get => _multipliers;
+            set { _multipliers = value; OnPropertyChanged("Multipliers"); }
+        }
+        #endregion
         #region Test
         public string Pouet
         {
@@ -281,6 +304,8 @@ namespace PNRSorter.MVVM
         public ICommand LinkPNRCmd { get; set; }
         public ICommand UpdateKE24Cmd { get; set; }
         public ICommand AddGroupCmd { get; set; }
+        public ICommand NumParamSetCmd { get; set; }
+
         #endregion
 
         #region Initialise
@@ -301,6 +326,7 @@ namespace PNRSorter.MVVM
             AddFamilyCmd = new RelayCommand(o => AddFamily(), o => { return ((MyGroup != null) && (NewFamily != "")); });
             LoadKE24Cmd = new RelayCommand(o => LoadKE24(), o => true);
             LinkPNRCmd = new RelayCommand(o => LinkPNR(), o => { return (SelectedGroup != "") || (SelectedFam != ""); });
+            NumParamSetCmd = new RelayCommand(o => { _multipliers.Close(); UpdateKE24(); }, o => { return (COGS.ToString() != "") || (Revenue.ToString() != ""); });
         }
 
 
@@ -314,7 +340,8 @@ namespace PNRSorter.MVVM
             //Commands
             InitialiseCommands();
             //Default config file location
-            ConfigFile = new FileInfo(@"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\PNRSorter\configPNRSorter.txt");
+            //ConfigFile = new FileInfo(@"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\PNRSorter\configPNRSorter.txt");
+            ConfigFile = new FileInfo(@"C:\Users\msagnard\Desktop\Fribourg\configPNRSorter.txt");
             //Extracting data
             //FileInfo KE24File = new FileInfo(@"C:\Users\msag\Desktop\PNRSorter\KE24_Extract_Total.xlsx");
             Config = LoadConfig();
@@ -364,8 +391,25 @@ namespace PNRSorter.MVVM
         #region Command Methods
         private void UpdateKE24()
         {
-            Mouse.OverrideCursor = Cursors.Wait;
+            //KE24Update.UpdateKE24 prog = new KE24Update.UpdateKE24(COGS, Revenue);
             KE24Update.UpdateKE24 prog = new KE24Update.UpdateKE24();
+            //int start = prog.CheckValues(COGS, Revenue);
+            //if (start == -1)
+            //{
+            //    Config.NumParam.COGS = _COGS;
+            //    Config.NumParam.Revenue = _revenue;
+            //    SaveConfig(Config);
+            //    return;
+            //}
+            //if (start == 0)
+            //{
+            //    _multipliers = new Multipliers();
+            //    _multipliers.Show();
+            //    return;
+            //}
+            //else
+            //{
+            Mouse.OverrideCursor = Cursors.Wait;
             List<List<object>> newData = new List<List<object>>(prog.LoadNewData());
             if (newData.Count == 0)
             {
@@ -375,6 +419,10 @@ namespace PNRSorter.MVVM
             prog.InsertData(newData);
             Mouse.OverrideCursor = Cursors.Arrow;
             MessageBox.Show("KE24 update successfully !");
+            //}
+            Config.NumParam.COGS = _COGS;
+            Config.NumParam.Revenue = _revenue;
+            SaveConfig(Config);
         }
 
         private void DisplayData()
@@ -867,7 +915,7 @@ namespace PNRSorter.MVVM
                     }
                     catch
                     {
-                        MessageBox.Show("It is not looking greate my friend, something is going wrong.\r Check if you are connected to VM network.\r If yes, contact Adrien Corne and tell him \"Coconut\"");
+                        MessageBox.Show("It is not looking great my friend, something is going wrong.\r Check if you are connected to VM network.\r If yes, contact Adrien Corne and tell him \" There is a code Coconut here\"");
                     }
                 }
                 //File.Create(ConfigFile.FullName);
@@ -884,6 +932,8 @@ namespace PNRSorter.MVVM
                         try
                         {
                             savedFile = (SavedFile)serialiser.Deserialize(fs);
+                            _COGS = savedFile.NumParam.COGS;
+                            _revenue = savedFile.NumParam.Revenue;
                         }
                         catch
                         {
@@ -913,8 +963,6 @@ namespace PNRSorter.MVVM
                 {
                     Groups.Add(groupName.Name);
                     GroupList.Add(groupName.Name);
-                    //GroupToFam.Add(groupName.Name, new List<string>());
-                    ObservableCollection<string> newInstance = new ObservableCollection<string>();
                     PNRHierarchy.Add(groupName.Name, new Dictionary<string, List<string>>());
                 }
             }
@@ -964,6 +1012,8 @@ namespace PNRSorter.MVVM
             foreach (var file in ofd.FileNames)
             {
                 savedFile.GroupList.Add(new GroupFile() { Name = file.Split('\\').Last(), Path = file });
+                savedFile.NumParam.COGS = 1.0;
+                savedFile.NumParam.Revenue = 1.0;
             }
             return savedFile;
         }

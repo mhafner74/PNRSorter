@@ -1,5 +1,6 @@
 ﻿using OfficeOpenXml;
 using OfficeOpenXml.Style;
+using PNRSorter.MVVM;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -9,16 +10,31 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using PNRSorter.Utility;
+using System.Xml.Serialization;
 
 namespace PNRSorter.KE24Update
 {
-    public class UpdateKE24
+    public class UpdateKE24:VMBase
     {
-        private string _FOLDER = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\NewKE24";
-        private string _KE24_EXTRACT_TOTAL = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\Data\KE24_Extract_Total.xlsx";
-        private string _BACKUP = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\Archives\BackUpKE24";
+        //private string _FOLDER = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\NewKE24";
+        //private string _KE24_EXTRACT_TOTAL = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\Data\KE24_Extract_Total.xlsx";
+        //private string _BACKUP = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\Archives\BackUpKE24";
+        private string _FOLDER = @"C:\Users\msagnard\Desktop\Fribourg\NewKE24";
+        private string _KE24_EXTRACT_TOTAL = @"C:\Users\msagnard\Desktop\Fribourg\Data\KE24_Extract_Total.xlsx";
+        private string _BACKUP = @"C:\Users\msagnard\Desktop\Fribourg\BackUpKE24";
         private List<string> wantedCol = new List<string>() { "Product", "Period", "Revenue", "Discount", "Direct material costs", "Direct Resource", "Direct Overhead", "Billing Quantity", "COGS", "Sales", "Gross Profit" };
-
+        private double _COGS;
+        private double _revenue;
+        public UpdateKE24() {
+            _COGS = 1;
+            _revenue = 1;
+        }
+        public UpdateKE24(double COGS, double Revenue)
+        {
+            _COGS = COGS;
+            _revenue = Revenue;
+        }
         public List<List<object>> LoadNewData()
         {
             string newFile = "";
@@ -41,17 +57,36 @@ namespace PNRSorter.KE24Update
                 //colIds[1] = period col id
                 List<string> uniqueDatesNewKE24 = new List<string>(UniqueElement(worksheet, colIds[1]));
                 List<string> uniqueDatesKE24Total = new List<string>(KE24Dates());
-                List<string> uniqueDates = DateToBeAdded(uniqueDatesNewKE24, uniqueDatesKE24Total);
-                if(uniqueDates.Count() == 0) 
+                if (uniqueDatesKE24Total.Count == 0)
                 {
-                    MessageBox.Show("Looks like the KE24 is already up to date");
-                    Clear();
+                    MessageBox.Show("Error, procedure aborted", "", MessageBoxButton.OK, MessageBoxImage.Error);
                     return new List<List<object>>();
                 }
-                Console.Write("\n\t Extracting data");
-                List<List<object>> extracted = new List<List<object>>(GetDataWithValue(worksheet, uniqueDates, colIds[1], colIds));
-                return extracted;
+                else
+                {
+                    List<string> uniqueDates = DateToBeAdded(uniqueDatesNewKE24, uniqueDatesKE24Total);
+                    if(uniqueDates.Count() == 0) 
+                    {
+                        MessageBox.Show("Looks like the KE24 is already up to date");
+                        Clear();
+                        return new List<List<object>>();
+                    }
+                    Console.Write("\n\t Extracting data");
+                    List<List<object>> extracted = new List<List<object>>(GetDataWithValue(worksheet, uniqueDates, colIds[1], colIds));
+                    return extracted;
+                }
             }
+        }
+
+        public int CheckValues(double COGS, double revenue)
+        {
+            MessageBoxResult decision = MessageBox.Show("New data will be added to the KE24 file using the following multipliers: \nRevenue = " + revenue.ToString() + "\nCOGS = " + COGS.ToString(), "", MessageBoxButton.YesNoCancel);
+            if (decision == MessageBoxResult.Cancel)
+                return -1;
+            if (decision == MessageBoxResult.No)
+                return 0;
+            else
+                return 1;
         }
 
         private List<string> KE24Dates()
@@ -162,7 +197,7 @@ namespace PNRSorter.KE24Update
         {
             for (int i = 1; i < worksheet.Dimension.Columns + 1; i++)
             {
-                if (worksheet.Cells[1, i].Value.ToString() == colName)
+                    if (worksheet.Cells[1, i].Value.ToString() == colName)
                 {
                     return i;
                 }
@@ -212,7 +247,16 @@ namespace PNRSorter.KE24Update
                 //The output has to be standardised
                 for(int i = 0; i< unique.Count(); i++)
                 {
-                    unique[i] = String.Join(".", unique[i].Split('.')[1], unique[i].Split('.')[2]);
+                    try
+                    {
+                        unique[i] = String.Join(".", unique[i].Split('.')[1], unique[i].Split('.')[2]);
+                    }
+                    catch(Exception e)
+                    {
+                        MessageBox.Show("Your default Windows region is not correct (that is what you get for using Excel). Please change it to \"Suisse\" and \"Français (Suisse) \"","",MessageBoxButton.OK,MessageBoxImage.Error);
+                        unique.Clear();
+                        return unique;
+                    }
                 }
             }
             return unique;
@@ -257,6 +301,18 @@ namespace PNRSorter.KE24Update
                                 temp.Add(DateTime.Parse("01." + ws.Cells[i, colId].Value.ToString().Substring(1).Replace('.', '/')));
                             else if (colId == colIds[0])
                                 temp.Add(ws.Cells[i, colId].Value.ToString());
+                            else if(colId == colIds[2])
+                            {
+                                double pouet = Convert.ToDouble(ws.Cells[i, colId].Value);
+                                double tempValue = Convert.ToDouble(ws.Cells[i, colId].Value) * _revenue;
+                                temp.Add(tempValue);
+                            }
+                            else if (colId == colIds[8])
+                            {
+                                double pouet2 = Convert.ToDouble(ws.Cells[i, colId].Value);
+                                double tempValue = Convert.ToDouble(ws.Cells[i, colId].Value) * _COGS;
+                                temp.Add(tempValue);
+                            }
                             else
                                 temp.Add((ws.Cells[i, colId].Value));
                         else

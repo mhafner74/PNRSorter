@@ -11,6 +11,7 @@ namespace PNRSorter.MVVM
     public class SavedFile
     {
         public List<GroupFile> GroupList { get; set; }
+        public NumData NumParam { get; set; }
         public List<string> StringGroupList()
         {
             List<string> stringGroupList = new List<string>(); 
@@ -24,6 +25,7 @@ namespace PNRSorter.MVVM
         public SavedFile()
         {
             GroupList = new List<GroupFile>();
+            NumParam = new NumData();
         }
     }
 
@@ -35,6 +37,17 @@ namespace PNRSorter.MVVM
         {
             Name = "";
             Path = "";
+        }
+    }
+
+    public class NumData
+    {
+        public double Revenue { get; set; }
+        public double COGS { get; set; }
+        public NumData()
+        {
+            Revenue = 1.0;
+            COGS = 1.0;
         }
     }
 }

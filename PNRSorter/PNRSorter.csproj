@@ -15,9 +15,9 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
     <IsWebBootstrapper>false</IsWebBootstrapper>
-    <PublishUrl>\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\PNRSorter\Prog\</PublishUrl>
+    <PublishUrl>C:\Users\msagnard\Desktop\Fribourg\Prog\</PublishUrl>
     <Install>true</Install>
-    <InstallFrom>Unc</InstallFrom>
+    <InstallFrom>Disk</InstallFrom>
     <UpdateEnabled>true</UpdateEnabled>
     <UpdateMode>Foreground</UpdateMode>
     <UpdateInterval>7</UpdateInterval>
@@ -27,9 +27,8 @@
     <MapFileExtensions>true</MapFileExtensions>
     <UpdateUrl>\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\PNRSorter\Prog\</UpdateUrl>
     <MinimumRequiredVersion>1.0.0.4</MinimumRequiredVersion>
-    <CreateWebPageOnPublish>true</CreateWebPageOnPublish>
     <WebPage>publish.htm</WebPage>
-    <ApplicationRevision>8</ApplicationRevision>
+    <ApplicationRevision>11</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -120,11 +119,15 @@
       <DependentUpon>EditGroupsAndFamilies.xaml</DependentUpon>
     </Compile>
     <Compile Include="KE24Update\UpdateKE24.cs" />
+    <Compile Include="Multipliers.xaml.cs">
+      <DependentUpon>Multipliers.xaml</DependentUpon>
+    </Compile>
     <Compile Include="MVVM\Family.cs" />
     <Compile Include="MVVM\Group.cs" />
     <Compile Include="MVVM\SavedFile.cs" />
     <Compile Include="MVVM\TreeItem.cs" />
     <Compile Include="Utility\BindableSelectedItemBehavior.cs" />
+    <Compile Include="Utility\Command.cs" />
     <Compile Include="Utility\DependencyObjectExtensions.cs" />
     <Compile Include="Utility\ExcelTools.cs" />
     <Compile Include="Utility\ListItems.cs" />
@@ -147,6 +150,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="Multipliers.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Styles\Btn.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
