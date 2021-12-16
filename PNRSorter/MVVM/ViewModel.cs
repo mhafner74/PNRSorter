@@ -25,8 +25,8 @@ namespace PNRSorter.MVVM
         private FileInfo _selectedFile;
         private FileInfo _KE24File;
         private ExcelTools _excelTools;
-        private string _archiveFolder = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\PNRSorter\Archives";
-        //private string _archiveFolder = @"C:\Users\msagnard\Desktop\Fribourg\Archives";
+        //private string _archiveFolder = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\PNRSorter\Archives";
+        private string _archiveFolder = @"C:\Users\msagnard\Desktop\Fribourg\Archives";
         private EditGroupsAndFamilies _editWin;
         #region UpdateKE24
         private Multipliers _multipliers;
@@ -340,8 +340,8 @@ namespace PNRSorter.MVVM
             //Commands
             InitialiseCommands();
             //Default config file location
-            ConfigFile = new FileInfo(@"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\PNRSorter\configPNRSorter.txt");
-            //ConfigFile = new FileInfo(@"C:\Users\msagnard\Desktop\Fribourg\configPNRSorter.txt");
+            //ConfigFile = new FileInfo(@"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\PNRSorter\configPNRSorter.txt");
+            ConfigFile = new FileInfo(@"C:\Users\msagnard\Desktop\Fribourg\configPNRSorter.txt");
             //Extracting data
             //FileInfo KE24File = new FileInfo(@"C:\Users\msag\Desktop\PNRSorter\KE24_Extract_Total.xlsx");
             Config = LoadConfig();
