@@ -12,6 +12,11 @@ using System.Xml.Linq;
 using System.Xml.Serialization;
 using Microsoft.Office.Interop.Excel;
 using System.Runtime.InteropServices;
+using System.Dynamic;
+using System.Data;
+using static System.Net.WebRequestMethods;
+using File = System.IO.File;
+using System.Security.Cryptography;
 
 namespace PNRSorter.MVVM
 {
@@ -26,7 +31,8 @@ namespace PNRSorter.MVVM
         private FileInfo _KE24File;
         private ExcelTools _excelTools;
         //private string _archiveFolder = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\PNRSorter\Archives";
-        private string _archiveFolder = @"C:\Users\msagnard\Desktop\Fribourg\Archives";
+        private string _archiveFolder = Directory.GetCurrentDirectory();
+        //private string _archiveFolder = @"C:\Users\msagnard\Desktop\Fribourg\Archives";
         private EditGroupsAndFamilies _editWin;
         #region UpdateKE24
         private Multipliers _multipliers;
@@ -53,6 +59,7 @@ namespace PNRSorter.MVVM
         private ObservableCollection<ListItems> _toBeSortedIni;
         private Dictionary<string, List<string>> _groupToFam;
         private SavedFile _config;
+        private string _dashboardDirectory;
         #endregion
         #region GUI variables
         private double _curSales;
@@ -313,7 +320,7 @@ namespace PNRSorter.MVVM
         {
             //Commands
             SaveCommand = new RelayCommand(o => UpdateExcelPNR(), o => true);
-            UpdateKE24Cmd = new RelayCommand(o => UpdateKE24(), o => true);
+            UpdateKE24Cmd = new RelayCommand(o => UpdateKE24(Get_dashboardDirectory()), o => true);
             UpdateCmd = new RelayCommand(o => UpdateExcelHeader(), o => true);
             DisplayDataCmd = new RelayCommand(o => DisplayData(), o => true);
             ResetCmd = new RelayCommand(o => Reset(), o => true);
@@ -326,7 +333,7 @@ namespace PNRSorter.MVVM
             AddFamilyCmd = new RelayCommand(o => AddFamily(), o => { return ((MyGroup != null) && (NewFamily != "")); });
             LoadKE24Cmd = new RelayCommand(o => LoadKE24(), o => true);
             LinkPNRCmd = new RelayCommand(o => LinkPNR(), o => { return (SelectedGroup != "") || (SelectedFam != ""); });
-            NumParamSetCmd = new RelayCommand(o => { _multipliers.Close(); UpdateKE24(); }, o => { return (COGS.ToString() != "") || (Revenue.ToString() != ""); });
+            NumParamSetCmd = new RelayCommand(o => { _multipliers.Close(); UpdateKE24(Get_dashboardDirectory()); }, o => { return (COGS.ToString() != "") || (Revenue.ToString() != ""); });
         }
 
 
@@ -341,7 +348,8 @@ namespace PNRSorter.MVVM
             InitialiseCommands();
             //Default config file location
             //ConfigFile = new FileInfo(@"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\PNRSorter\configPNRSorter.txt");
-            ConfigFile = new FileInfo(@"C:\Users\msagnard\Desktop\Fribourg\configPNRSorter.txt");
+            ConfigFile = new FileInfo(Path.Combine(Environment.CurrentDirectory,"configPNRSorter.txt"));
+             //ConfigFile = new FileInfo(Direcetory.GetCurrentDirectory());
             //Extracting data
             //FileInfo KE24File = new FileInfo(@"C:\Users\msag\Desktop\PNRSorter\KE24_Extract_Total.xlsx");
             Config = LoadConfig();
@@ -386,13 +394,18 @@ namespace PNRSorter.MVVM
         {
             Initialise();
         }
+
+        private string Get_dashboardDirectory()
+        {
+            return _dashboardDirectory;
+        }
         #endregion
 
         #region Command Methods
-        private void UpdateKE24()
+        private void UpdateKE24(string _dashboardDirectory)
         {
             //KE24Update.UpdateKE24 prog = new KE24Update.UpdateKE24(COGS, Revenue);
-            KE24Update.UpdateKE24 prog = new KE24Update.UpdateKE24();
+            KE24Update.UpdateKE24 prog = new KE24Update.UpdateKE24(_dashboardDirectory);
             //int start = prog.CheckValues(COGS, Revenue);
             //if (start == -1)
             //{
@@ -587,7 +600,8 @@ namespace PNRSorter.MVVM
         private void LoadKE24()
         {
             OpenFileDialog ke24 = new OpenFileDialog();
-            ke24.DefaultExt = "xls, xlsx";
+            ke24.DefaultExt = "xlsx";
+            ke24.Filter = "Excel files (*.xls;*.xlsx)|*.xls;*.xlsx|All files (*.*)|*.*";
             ke24.InitialDirectory = ConfigFile.DirectoryName;
             ke24.ShowDialog();
             Mouse.OverrideCursor = Cursors.Wait;
@@ -703,7 +717,7 @@ namespace PNRSorter.MVVM
                             Microsoft.Office.Interop.Excel.Application oXL;
                             Microsoft.Office.Interop.Excel._Workbook oWB;
                             Microsoft.Office.Interop.Excel._Worksheet oSheet;
-                            FileInfo file = new FileInfo(famFile.Path);
+                            FileInfo file = new FileInfo(famFile.Path + "\\" + famFile.Name);
                             //check if file is already open
                             if (_excelTools.IsFileOpen(famFile.Path))
                                 MessageBox.Show("The file " + famFile.Name + " located in " + famFile.Path + " is already open, please close it first for changes to be applied");
@@ -843,7 +857,7 @@ namespace PNRSorter.MVVM
                 Microsoft.Office.Interop.Excel._Workbook oWB;
                 Microsoft.Office.Interop.Excel._Worksheet oSheet;
                 object misvalue = System.Reflection.Missing.Value;
-                FileInfo file = new FileInfo(famFile.Path);
+                FileInfo file = new FileInfo(famFile.Path + "\\" + famFile.Name);
                 foreach (var group in Hierarchy)
                 {
                     if (group.GroupName == famFile.Name)
@@ -856,7 +870,7 @@ namespace PNRSorter.MVVM
 
                             //Get proper sheet
                             //oWB = (Microsoft.Office.Interop.Excel._Workbook)(oXL.Workbooks[0]);
-                            oWB = oXL.Workbooks.Open(famFile.Path);
+                            oWB = oXL.Workbooks.Open(file.FullName);
                             oSheet = (Microsoft.Office.Interop.Excel._Worksheet)oWB.ActiveSheet;
 
                             //Create headers
@@ -959,7 +973,7 @@ namespace PNRSorter.MVVM
             //Populating each group based on the config file
             foreach (GroupFile groupName in savedFile.GroupList)
             {
-                if (File.Exists(groupName.Path))
+                if (File.Exists(groupName.Path+ "\\"+groupName.Name))
                 {
                     Groups.Add(groupName.Name);
                     GroupList.Add(groupName.Name);
@@ -988,13 +1002,14 @@ namespace PNRSorter.MVVM
         {
             OpenFileDialog ofd = new OpenFileDialog();
             ofd.Title = "Pick a new group file";
-            ofd.DefaultExt = "xls, xlsx";
+            ofd.DefaultExt = "xlsx";
+            ofd.Filter = "Excel files (*.xls;*.xlsx)|*.xls;*.xlsx|All files (*.*)|*.*";
             ofd.InitialDirectory = ConfigFile.DirectoryName;
             ofd.Multiselect = true;
             ofd.ShowDialog();
             foreach (var file in ofd.FileNames)
             {
-                Config.GroupList.Add(new GroupFile() { Name = file.Split('\\').Last(), Path = file });
+                Config.GroupList.Add(new GroupFile() { Name = Path.GetFileName(file), Path = Path.GetDirectoryName(file) });
             }
             SaveConfig(Config);
             Initialise();
@@ -1003,15 +1018,16 @@ namespace PNRSorter.MVVM
         public SavedFile PopulateConfig()
         {
             SavedFile savedFile = new SavedFile();
-            MessageBox.Show("No valid configuration file has been found. Please select at leat on .xlsx sorting product families");
+//            MessageBox.Show("No valid configuration file has been found. Please select at least one .xlsx sorting product families");
             OpenFileDialog ofd = new OpenFileDialog();
-            ofd.DefaultExt = "xls, xlsx";
+            ofd.DefaultExt = "xlsx";
+            ofd.Filter = "Excel files (*.xls;*.xlsx)|*.xls;*.xlsx|All files (*.*)|*.*";
             ofd.InitialDirectory = ConfigFile.DirectoryName;
             ofd.Multiselect = true;
             ofd.ShowDialog();
             foreach (var file in ofd.FileNames)
             {
-                savedFile.GroupList.Add(new GroupFile() { Name = file.Split('\\').Last(), Path = file });
+                savedFile.GroupList.Add(new GroupFile() { Name = Path.GetFileName(file), Path = Path.GetDirectoryName(file) });
                 savedFile.NumParam.COGS = 1.0;
                 savedFile.NumParam.Revenue = 1.0;
             }
@@ -1028,6 +1044,7 @@ namespace PNRSorter.MVVM
 
             //Look for the column numbers in KE24
             FindColumn(KE24File, colInfo);
+            _dashboardDirectory = KE24File.Directory.Parent.FullName;
             _productCol = colInfo["Product"];
             _salesCol = colInfo["Sales"];
             _unitSoldCol = colInfo["Billing Quantity"];
@@ -1047,7 +1064,8 @@ namespace PNRSorter.MVVM
             {
                 try
                 {
-                    FileInfo file = new FileInfo(sfFile.Path);
+                    FileInfo file = new FileInfo(sfFile.Path + "\\" + sfFile.Name);
+ //                   MessageBox.Show("loading family file: " + file.FullName, "", MessageBoxButton.OK);
                     if (File.Exists(file.FullName))
                     {
                         using (var package = new ExcelPackage(file))
@@ -1110,7 +1128,7 @@ namespace PNRSorter.MVVM
         {
             using (var package = new ExcelPackage(file))
             {
-                ExcelWorksheet worksheet = package.Workbook.Worksheets.FirstOrDefault();
+                ExcelWorksheet worksheet = package.Workbook.Worksheets.FirstOrDefault(w => w.Name == "KE24");
                 int rows = worksheet.Dimension.Rows;
                 //rows have to start at 2, we don't want headers
                 for (int j = 2; j < rows + 1; j++)
@@ -1178,15 +1196,22 @@ namespace PNRSorter.MVVM
         {
             using (var package = new ExcelPackage(excel))
             {
-                ExcelWorksheet worksheet = package.Workbook.Worksheets.FirstOrDefault();
+                ExcelWorksheet worksheet = package.Workbook.Worksheets.FirstOrDefault(w => w.Name == "KE24");
                 int columns = worksheet.Dimension.Columns;
-                for (int i = 1; i < columns + 1; i++)
-                {
-                    if (name.Keys.Contains(worksheet.Cells[1, i].Value.ToString()))
+                
+                    for (int i = 1; i <= columns; i++)
                     {
-                        name[worksheet.Cells[1, i].Value.ToString()] = i;
+                    if (worksheet.Cells[1, i].Value==null)
+                        MessageBox.Show("Problème avec le fichier KE24: valeur null dans colonne détecté " + i + "/n");
+                    else
+                    {
+                        if (name.Keys.Contains(worksheet.Cells[1, i].Value.ToString()))
+                        {
+                            name[worksheet.Cells[1, i].Value.ToString()] = i;
+                        }
                     }
                 }
+                
             }
 
             return;

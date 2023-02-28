@@ -108,7 +108,7 @@
                                 </StackPanel>
                                 <Separator Height="20" Background="{x:Null}"/>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Button HorizontalAlignment="Left" Height="63" VerticalAlignment="Top" Width="100" Style="{DynamicResource btnRound}" Command="{Binding EditCmd}">
+                                    <Button HorizontalAlignment="Left" Height="63" VerticalAlignment="Top" Width="100" Style="{DynamicResource btnRound}" Command="{Binding EditCmd}" Click="Button_Click_3">
                                         <TextBlock Text="Edit Groups and Families" TextAlignment="Center" TextWrapping="Wrap" TextBlock.FontWeight="Bold" TextBlock.Foreground="AntiqueWhite"/>
                                     </Button>
                                     <Separator Width="10" Background="{x:Null}"/>

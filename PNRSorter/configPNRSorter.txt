@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SavedFile xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <GroupList>
+    <GroupFile>
+      <Name>Families_PMS_v2.xlsx</Name>
+      <Path>C:\Users\hafne\OneDrive\Documents\Dashboard</Path>
+    </GroupFile>
+    <GroupFile>
+      <Name>Families_S_C_v2.xlsx</Name>
+      <Path>C:\Users\hafne\OneDrive\Documents\Dashboard</Path>
+    </GroupFile>
+  </GroupList>
+  <NumParam>
+    <Revenue>1</Revenue>
+    <COGS>1</COGS>
+  </NumParam>
+</SavedFile>

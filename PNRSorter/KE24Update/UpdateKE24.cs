@@ -23,18 +23,36 @@ namespace PNRSorter.KE24Update
         //    Data
         //    NewKE24
 
-        //private string _FOLDER = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\NewKE24";
-        //private string _KE24_EXTRACT_TOTAL = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\Data\KE24_Extract_Total.xlsx";
-        //private string _BACKUP = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\Archives\BackUpKE24";
-        private string _FOLDER = @"C:\Users\msagnard\Desktop\Fribourg\NewKE24";
-        private string _KE24_EXTRACT_TOTAL = @"C:\Users\msagnard\Desktop\Fribourg\Data\KE24_Extract_Total.xlsx";
-        private string _BACKUP = @"C:\Users\msagnard\Desktop\Fribourg\BackUpKE24";
+        //private string NewKE24Directory = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\NewKE24";
+        //private string KE24ExtractTotalFile = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\Data\KE24_Extract_Total.xlsx";
+        //private string BackupDirectory = @"\\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\Archives\BackUpKE24";
         private List<string> wantedCol = new List<string>() { "Product", "Period", "Revenue", "Discount", "Direct material costs", "Direct Resource", "Direct Overhead", "Billing Quantity", "COGS", "Sales", "Gross Profit" };
         private double _COGS;
         private double _revenue;
-        public UpdateKE24() {
+        public string BackupDirectory { get
+            {
+                return Path.Combine(DashboardDirectory, "BackUpKE24");
+            }
+        }
+        public string NewKE24Directory
+        {
+            get
+            {
+                return Path.Combine(DashboardDirectory, "NewKE24");
+            }
+        }
+        public string KE24ExtractTotalFile
+        {
+            get
+            {
+                return Path.Combine(DashboardDirectory, "Data\\KE24_Extract_Total.xlsx");
+            }
+        }
+        public string DashboardDirectory   { get; private set; }
+        public UpdateKE24(string dashboardDirectory) {
             _COGS = 1;
             _revenue = 1;
+            DashboardDirectory = dashboardDirectory;
         }
         public UpdateKE24(double COGS, double Revenue)
         {
@@ -46,11 +64,11 @@ namespace PNRSorter.KE24Update
             string newFile = "";
             try
             {
-                newFile = Directory.GetFiles(_FOLDER)[0];
+                newFile = Directory.GetFiles(NewKE24Directory)[0];
             }
             catch
             {
-                MessageBox.Show("There are currently no file in " + _FOLDER + ". Please add a KE24 file in it for this function to work");
+                MessageBox.Show("There are currently no file in " + NewKE24Directory + ". Please add a KE24 file in it for this function to work");
                 return new List<List<object>>();
             }
             Console.Write("\n Reading the new KE24 file");
@@ -58,7 +76,7 @@ namespace PNRSorter.KE24Update
             using (ExcelPackage package = new ExcelPackage(file))
             {
                 Console.Write("\n\t gathering colums position");
-                ExcelWorksheet worksheet = package.Workbook.Worksheets.FirstOrDefault();
+                ExcelWorksheet worksheet = package.Workbook.Worksheets.FirstOrDefault(w => w.Name == "KE24");
                 List<int> colIds = new List<int>(GetColIDs(worksheet, wantedCol));
                 //colIds[1] = period col id
                 List<string> uniqueDatesNewKE24 = new List<string>(UniqueElement(worksheet, colIds[1]));
@@ -98,7 +116,7 @@ namespace PNRSorter.KE24Update
         private List<string> KE24Dates()
         {
             List<string> uniqueDates;
-            FileInfo file = new FileInfo(_KE24_EXTRACT_TOTAL);
+            FileInfo file = new FileInfo(KE24ExtractTotalFile);
             using (ExcelPackage package = new ExcelPackage(file))
             {
                 ExcelWorksheet ws = package.Workbook.Worksheets.FirstOrDefault();
@@ -152,7 +170,7 @@ namespace PNRSorter.KE24Update
         public void InsertData(List<List<object>> data)
         {
             Console.Write("\n Inserting new data into KE24 global file");
-            FileInfo save = new FileInfo(_KE24_EXTRACT_TOTAL);
+            FileInfo save = new FileInfo(KE24ExtractTotalFile);
             using (ExcelPackage package = new ExcelPackage(save))
             {
                 ExcelWorksheet worksheet = package.Workbook.Worksheets.FirstOrDefault();
@@ -177,7 +195,7 @@ namespace PNRSorter.KE24Update
                 {
                     MessageBox.Show(@"The file \\vm.dom\ns1\DATA\Engineering_Energy\Monthly_ProductLine_Reviews\_Dashboard\Data\KE24_Extract_Total.xlsx is already openned. Updates cannot be saved. Close the file and restart the procedure"); 
                 }
-                //File.WriteAllBytes(_KE24_EXTRACT_TOTAL, package.GetAsByteArray());
+                //File.WriteAllBytes(KE24ExtractTotalFile, package.GetAsByteArray());
                 Clear();
             }
         }
@@ -186,14 +204,18 @@ namespace PNRSorter.KE24Update
         private void Clear()
         {
             //Moving the file out of the repertory to a backup directory
-            string oldFile = _FOLDER + "\\" + Directory.GetFiles(_FOLDER)[0].Split('\\').Last();
-            string newFile = _BACKUP + "\\" + Directory.GetFiles(_FOLDER)[0].Split('\\').Last();
+            string oldFile = NewKE24Directory + "\\" + Directory.GetFiles(NewKE24Directory)[0].Split('\\').Last();
+            string newFile = BackupDirectory + "\\" + Directory.GetFiles(NewKE24Directory)[0].Split('\\').Last();
+            if (!Directory.Exists(BackupDirectory))
+            {
+                Directory.CreateDirectory(BackupDirectory);
+            }
             if (File.Exists(newFile))
             {
                 int index = 1;
-                while (File.Exists(_BACKUP + "\\" + Path.GetFileNameWithoutExtension(newFile) + "_" + index + ".xlsx"))
+                while (File.Exists(BackupDirectory + "\\" + Path.GetFileNameWithoutExtension(newFile) + "_" + index + ".xlsx"))
                     index++;
-                newFile = _BACKUP + "\\" + Path.GetFileNameWithoutExtension(newFile) + "_" + index + ".xlsx";
+                newFile = BackupDirectory + "\\" + Path.GetFileNameWithoutExtension(newFile) + "_" + index + ".xlsx";
             }
             File.Move(oldFile, newFile);
         }
@@ -208,7 +230,7 @@ namespace PNRSorter.KE24Update
                     return i;
                 }
             }
-            MessageBox.Show("Whoops, could not locate the \"Period\" column in the Excel file. Please make sure it is present in " + _FOLDER);
+            MessageBox.Show("Whoops, could not locate the \"Period\" column in the Excel file. Please make sure it is present in " + NewKE24Directory);
             Environment.Exit(0);
             return -1;
         }
@@ -240,26 +262,52 @@ namespace PNRSorter.KE24Update
                     }
                 }
             }
-            else
+            if (flag == "date")
             {
                 for (int i = 2; i < nbRows + 1; i++)
                 {
                     //The date needs to be converted into a string. The value of the cell has to be converted from an object to a string to a double to a date to a string.
-                    if (!unique.Contains(DateTime.FromOADate(Convert.ToDouble(ws.Cells[i, ColNb].Value)).ToString().Split(' ')[0]))
+                    object value = ws.Cells[i, ColNb].Value;
+                    if (value!=null && value.GetType() == typeof(DateTime))
                     {
-                        unique.Add(DateTime.FromOADate(Convert.ToDouble(ws.Cells[i, ColNb].Value)).ToString().Split(' ')[0]);
+                        string test = Convert.ToString(value).ToString().Split(' ')[0];
+                        if (!unique.Contains(test))
+                        { unique.Add(test); }
                     }
+                    else
+                    {
+                        //DateTime test1 = DateTime.FromOADate(Convert.ToDouble(value));
+                        //string test = DateTime.FromOADate(Convert.ToDouble(value)).ToString();
+                        if (!unique.Contains(DateTime.FromOADate(Convert.ToDouble(value)).ToString().Split(' ')[0]))
+                        {
+                            unique.Add(DateTime.FromOADate(Convert.ToDouble(value)).ToString().Split(' ')[0]);
+                        }
+                    }
+                     
                 }
-                //The output has to be standardised
+                //The output has to be standardised with separator being "." between days, month and years
                 for(int i = 0; i< unique.Count(); i++)
                 {
                     try
                     {
-                        unique[i] = String.Join(".", unique[i].Split('.')[1], unique[i].Split('.')[2]);
+                        //string[] test = unique[i].Split('/');
+                        //string[] test1 = unique[i].Split('.');
+                        if (unique[i].Split('/').Length > 1)
+                        {
+                            unique[i] = String.Join(".", unique[i].Split('/')[1], unique[i].Split('/')[2]);
+                        }
+                        else if (unique[i].Split('.').Length > 1)
+                        {
+                            unique[i] = String.Join(".", unique[i].Split('.')[1], unique[i].Split('.')[2]);
+                        }
+                        else
+                        {
+                            unique[i] = String.Join(".", unique[i].Split(' ')[1], unique[i].Split(' ')[2]);
+                        }
                     }
                     catch(Exception e)
                     {
-                        MessageBox.Show("Your default Windows region is not correct (that is what you get for using Excel). Please change it to \"Suisse\" and \"Français (Suisse) \"","",MessageBoxButton.OK,MessageBoxImage.Error);
+                        MessageBox.Show("Your default Windows region is not correct (that is what you get for using Excel). Please change it to English (Switzerland) so the date is with the format dd/MM/yyyy or dd.MM.yyyy","",MessageBoxButton.OK,MessageBoxImage.Error);
                         unique.Clear();
                         return unique;
                     }

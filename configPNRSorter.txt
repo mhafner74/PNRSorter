@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SavedFile xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <GroupList />
+  <NumParam>
+    <Revenue>1</Revenue>
+    <COGS>1</COGS>
+  </NumParam>
+</SavedFile>
